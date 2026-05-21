@@ -1,0 +1,305 @@
+﻿@model OdontoSystem.Entities.Paciente
+
+@{
+    ViewBag.Title = "Registrar paciente";
+}
+
+<div class="container mt-4">
+    <h2>Registrar nuevo paciente</h2>
+    <hr />
+
+    @using (Html.BeginForm("Crear", "Pacientes", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Apellido Paterno *</label>
+                <input name="ApellidoPaterno" id="inputApellidoPaterno" class="form-control" maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Materno *</label>
+                <input name="ApellidoMaterno" id="inputApellidoMaterno" class="form-control" maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nombres *</label>
+                <input name="Nombres" id="inputNombres" class="form-control" maxlength="80" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Tipo de Documento *</label>
+                <select name="IdTipoDocumento" class="form-select" required>
+                    <option value="1">DNI</option>
+                    <option value="2">Carnet de Extranjería</option>
+                    <option value="3">Pasaporte</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">N° de Documento *</label>
+                <input name="NumeroDocumento" id="inputNumeroDocumento"
+                       class="form-control" required maxlength="20" />
+                <div id="feedbackDni" class="mt-1" style="font-size: 0.85em;"></div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sexo *</label>
+                <select name="IdSexo" class="form-select" required>
+                    <option value="1">Masculino</option>
+                    <option value="2">Femenino</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha de Nacimiento *</label>
+                <input type="date" name="FechaNacimiento" id="inputFechaNacimiento"
+                       class="form-control" required
+                       max="@DateTime.Today.AddYears(-2).ToString("yyyy-MM-dd")"
+                       min="@DateTime.Today.AddYears(-120).ToString("yyyy-MM-dd")" />
+                <div id="feedbackEdad" class="mt-1" style="font-size: 0.85em;"></div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Teléfono</label>
+                <input name="Telefono" id="inputTelefono" class="form-control"
+                       maxlength="9" pattern="9[0-9]{8}"
+                       placeholder="987654321" />
+                <div id="feedbackTelefono" class="mt-1" style="font-size: 0.85em;"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Correo</label>
+                <input type="email" name="Correo" id="inputCorreo" class="form-control"
+                       maxlength="254" placeholder="ejemplo@dominio.com" />
+                <div id="feedbackCorreo" class="mt-1" style="font-size: 0.85em;"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Distrito</label>
+                <select name="IdDistrito" class="form-select">
+                    <option value="">-- Seleccione distrito --</option>
+                    @if (ViewBag.Distritos != null)
+                    {
+                        foreach (var d in (IEnumerable<OdontoSystem.Entities.Distrito>)ViewBag.Distritos)
+                        {
+                            <option value="@d.IdDistrito">@d.Nombre (@d.Provincia)</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Dirección</label>
+                <input name="Direccion" class="form-control" maxlength="200" />
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // ─── Validación de correo ───────────────────────────────
+        (function () {
+            const input = document.getElementById('inputCorreo');
+            const feedback = document.getElementById('feedbackCorreo');
+            let timeoutId = null;
+
+            if (!input) return;
+
+            input.addEventListener('input', function () {
+                clearTimeout(timeoutId);
+                feedback.innerHTML = '';
+                const correo = this.value.trim();
+                if (correo.length < 5) return;
+                timeoutId = setTimeout(() => validar(correo), 500);
+            });
+
+            function validar(correo) {
+                fetch('@Url.Action("ValidarCorreo", "Pacientes")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'correo=' + encodeURIComponent(correo)
+                })
+                .then(r => r.json())
+                .then(data => mostrarResultado(data))
+                .catch(() => { });
+            }
+
+            function mostrarResultado(data) {
+                input.classList.remove('is-valid', 'is-invalid');
+                if (!data.valido && data.sugerencia) {
+                    input.classList.add('is-invalid');
+                    feedback.innerHTML =
+                        '<span class="text-warning">' +
+                        '<i class="fa-solid fa-lightbulb"></i> ' + data.mensaje +
+                        ' <a href="#" onclick="aceptarSugerencia(\'' + data.correoSugerido + '\'); return false;">' +
+                        '<strong>Sí, corregir</strong></a></span>';
+                } else if (!data.valido) {
+                    input.classList.add('is-invalid');
+                    feedback.innerHTML =
+                        '<span class="text-danger"><i class="fa-solid fa-circle-xmark"></i> ' +
+                        data.mensaje + '</span>';
+                } else {
+                    input.classList.add('is-valid');
+                    feedback.innerHTML =
+                        '<span class="text-success"><i class="fa-solid fa-circle-check"></i> Correo válido</span>';
+                }
+            }
+
+            window.aceptarSugerencia = function (correo) {
+                input.value = correo;
+                input.dispatchEvent(new Event('input'));
+            };
+        })();
+    </script>
+
+    <script>
+        // ─── Validación DNI RENIEC ──────────────────────────────
+        (function () {
+            const inputDni   = document.getElementById('inputNumeroDocumento');
+            const selectTipo = document.querySelector('select[name="IdTipoDocumento"]');
+            const feedback   = document.getElementById('feedbackDni');
+
+            if (!inputDni) return;
+
+            inputDni.addEventListener('blur', function () {
+                if (selectTipo.value !== '1') return;
+
+                const dni = this.value.trim();
+                document.getElementById('inputApellidoPaterno').removeAttribute('readonly');
+                document.getElementById('inputApellidoMaterno').removeAttribute('readonly');
+                document.getElementById('inputNombres').removeAttribute('readonly');
+                feedback.innerHTML = '';
+
+                if (dni.length !== 8 || isNaN(dni)) {
+                    feedback.innerHTML = '<span class="text-danger">❌ El DNI debe tener exactamente 8 dígitos</span>';
+                    return;
+                }
+
+                feedback.innerHTML = '<span class="text-secondary">⏳ Consultando RENIEC...</span>';
+
+                fetch('@Url.Action("ConsultarDni", "Pacientes")?dni=' + dni)
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data.success) {
+                            document.getElementById('inputApellidoPaterno').value = data.apPaterno;
+                            document.getElementById('inputApellidoMaterno').value = data.apMaterno;
+                            document.getElementById('inputNombres').value         = data.nombre;
+                            feedback.innerHTML = '<span class="text-success">✅ DNI verificado en RENIEC</span>';
+                            document.getElementById('inputApellidoPaterno').setAttribute('readonly', true);
+                            document.getElementById('inputApellidoMaterno').setAttribute('readonly', true);
+                            document.getElementById('inputNombres').setAttribute('readonly', true);
+                        } else {
+                            feedback.innerHTML = '<span class="text-danger">❌ ' + data.mensaje + '</span>';
+                        }
+                    })
+                    .catch(function () {
+                        feedback.innerHTML = '<span class="text-warning">⚠️ Sin conexión con RENIEC</span>';
+                    });
+            });
+        })();
+    </script>
+
+    <script>
+        // ─── Validar documento antes de guardar ─────────────────
+        (function () {
+            const form = document.querySelector('form');
+            const btnGuardar = document.querySelector('button[type="submit"]');
+            const feedbackDni = document.getElementById('feedbackDni');
+
+            if (!form) return;
+
+            form.addEventListener('submit', function (e) {
+                const numero = document.getElementById('inputNumeroDocumento').value.trim();
+                if (!numero) return;
+
+                e.preventDefault();
+                btnGuardar.disabled = true;
+                btnGuardar.textContent = 'Validando...';
+
+                fetch('@Url.Action("ValidarDocumento", "Pacientes")?numero=' + numero)
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (data.existe) {
+                            feedbackDni.innerHTML =
+                                '<span class="text-danger">❌ Este número de documento ya está registrado</span>';
+                            btnGuardar.disabled = false;
+                            btnGuardar.textContent = 'Guardar';
+                        } else {
+                            form.submit();
+                        }
+                    })
+                    .catch(function () {
+                        form.submit();
+                    });
+            });
+        })();
+    </script>
+
+    <script>
+        // ─── Validación de edad ─────────────────────────────────
+        (function () {
+            const inputFecha = document.getElementById('inputFechaNacimiento');
+            const feedback = document.getElementById('feedbackEdad');
+
+            if (!inputFecha) return;
+
+            inputFecha.addEventListener('change', function () {
+                feedback.innerHTML = '';
+                if (!this.value) return;
+
+                const fechaNac = new Date(this.value);
+                const hoy = new Date();
+
+                if (fechaNac > hoy) {
+                    feedback.innerHTML = '<span class="text-danger">❌ La fecha no puede ser futura</span>';
+                    this.value = '';
+                    return;
+                }
+
+                let edad = hoy.getFullYear() - fechaNac.getFullYear();
+                const m = hoy.getMonth() - fechaNac.getMonth();
+                if (m < 0 || (m === 0 && hoy.getDate() < fechaNac.getDate())) edad--;
+
+                if (edad < 2) {
+                    feedback.innerHTML = '<span class="text-danger">❌ El paciente debe tener al menos 2 años (edad actual: ' + edad + ')</span>';
+                } else if (edad > 120) {
+                    feedback.innerHTML = '<span class="text-danger">❌ Fecha de nacimiento no válida</span>';
+                } else {
+                    feedback.innerHTML = '<span class="text-success">✅ Edad: ' + edad + ' años</span>';
+                }
+            });
+        })();
+    </script>
+
+    <script>
+        // ─── Validación de teléfono ─────────────────────────────
+        (function () {
+            const inputTel = document.getElementById('inputTelefono');
+            const feedback = document.getElementById('feedbackTelefono');
+
+            if (!inputTel) return;
+
+            inputTel.addEventListener('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+                feedback.innerHTML = '';
+
+                const tel = this.value;
+                if (tel.length === 0) return;
+
+                if (tel.length < 9) {
+                    feedback.innerHTML = '<span class="text-secondary">⏳ Faltan ' + (9 - tel.length) + ' dígitos</span>';
+                    return;
+                }
+
+                if (!/^9\d{8}$/.test(tel)) {
+                    feedback.innerHTML = '<span class="text-danger">❌ Debe empezar con 9 (ej: 987654321)</span>';
+                    return;
+                }
+
+                feedback.innerHTML = '<span class="text-success">✅ Teléfono válido</span>';
+            });
+        })();
+    </script>
+}

@@ -1,0 +1,36 @@
+﻿@model OdontoSystem.Entities.CatalogoTratamiento
+
+@{
+    ViewBag.Title = "Editar Tratamiento";
+}
+
+<div class="container mt-4">
+    <h2>Editar Tratamiento</h2>
+    <hr />
+
+    @using (Html.BeginForm("Editar", "Catalogo", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+        @Html.HiddenFor(m => m.IdTratamiento)
+        @Html.HiddenFor(m => m.Estado)
+        @Html.HiddenFor(m => m.FechaRegistro)
+
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label class="form-label">Nombre *</label>
+                <input name="Nombre" class="form-control" value="@Model.Nombre" required maxlength="100" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Precio Base (S/) *</label>
+                <input type="number" step="0.01" name="PrecioBase" class="form-control"
+                       value="@Model.PrecioBase" required min="0" />
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Actualizar</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>

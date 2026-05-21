@@ -1,0 +1,73 @@
+﻿@model IEnumerable<OdontoSystem.Entities.CatalogoTratamiento>
+
+@{
+    ViewBag.Title = "Catálogo de Tratamientos";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Catálogo de Tratamientos</h2>
+        <a href="@Url.Action("Crear")" class="btn btn-primary">+ Nuevo Tratamiento</a>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Exito"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <table class="table table-striped">
+            <thead class="table-primary">
+                <tr>
+                    <th>Nombre</th>
+                    <th>Precio Base</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.Nombre</td>
+                        <td>S/ @t.PrecioBase.ToString("N2")</td>
+                        <td>
+                            @if (t.Estado == "A")
+                            {
+                                <span class="badge bg-success">Activo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactivo</span>
+                            }
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Editar", new { id = t.IdTratamiento })"
+                               class="btn btn-sm btn-outline-primary">Editar</a>
+                            <a href="@Url.Action("CambiarEstado", new { id = t.IdTratamiento })"
+                               class="btn btn-sm btn-outline-warning"
+                               onclick="return confirm('¿Cambiar el estado de este tratamiento?');">
+                                @(t.Estado == "A" ? "Desactivar" : "Activar")
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info">No hay tratamientos registrados.</div>
+    }
+</div>

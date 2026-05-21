@@ -1,0 +1,88 @@
+﻿@model OdontoSystem.Entities.Cita
+@{
+    ViewBag.Title = "Detalle de Cita";
+    var historial = ViewBag.Historial as IEnumerable<OdontoSystem.Entities.HistorialEstadoCita>;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Detalle de Cita #@Model.IdCita</h2>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Volver</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <strong>Información de la Cita</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Paciente:</strong> @Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno @Model.Paciente.ApellidoMaterno</p>
+                    <p><strong>Documento:</strong> @Model.Paciente.NumeroDocumento</p>
+                    <p><strong>Odontólogo:</strong> Dr. @Model.Odontologo.Nombres @Model.Odontologo.ApellidoPaterno</p>
+                    <p><strong>Fecha:</strong> @Model.FechaCita.ToString("dd/MM/yyyy")</p>
+                    <p><strong>Hora:</strong> @Model.HoraCita.ToString(@"hh\:mm")</p>
+                    <p>
+                        <strong>Estado:</strong>
+                        @switch (Model.Estado)
+                        {
+                            case "Pendiente":<span class="badge bg-warning text-dark">Pendiente</span> break;
+                            case "Atendida": <span class="badge bg-success">Atendida</span> break;
+                            case "Cancelada": <span class="badge bg-danger">Cancelada</span>break;
+                        }
+                    </p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Motivo))
+                    {
+                        <p><strong>Último motivo:</strong> @Model.Motivo</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.Observaciones))
+                    {
+                        <p><strong>Observaciones:</strong> @Model.Observaciones</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <strong>Historial de Estados</strong>
+                </div>
+                <div class="card-body">
+                    @if (historial != null && historial.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var h in historial)
+                            {
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>
+                                            @if (!string.IsNullOrEmpty(h.EstadoAnterior))
+                                            {
+                                                @h.EstadoAnterior <text> → </text>
+                                            }
+                                            @h.EstadoNuevo
+                                        </strong>
+                                        <small class="text-muted">@h.FechaCambio.ToString("dd/MM/yyyy HH:mm")</small>
+                                    </div>
+                                    @if (h.Usuario != null)
+                                    {
+                                        <small class="text-muted">Por: @h.Usuario.Nombres @h.Usuario.ApellidoPaterno</small><br />
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(h.Motivo))
+                                    {
+                                        <small><em>@h.Motivo</em></small>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">No hay historial de cambios.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
