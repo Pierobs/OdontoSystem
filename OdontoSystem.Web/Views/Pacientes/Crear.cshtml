@@ -1,0 +1,156 @@
+﻿@model OdontoSystem.Entities.Paciente
+
+@{
+    ViewBag.Title = "Registrar paciente";
+}
+
+<div class="container mt-4">
+    <h2>Registrar nuevo paciente</h2>
+    <hr />
+
+    @using (Html.BeginForm("Crear", "Pacientes", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Apellido Paterno *</label>
+                <input name="ApellidoPaterno" class="form-control" required maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Materno *</label>
+                <input name="ApellidoMaterno" class="form-control" required maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nombres *</label>
+                <input name="Nombres" class="form-control" required maxlength="80" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Tipo de Documento *</label>
+                <select name="IdTipoDocumento" class="form-select" required>
+                    <option value="1">DNI</option>
+                    <option value="2">Carnet de Extranjería</option>
+                    <option value="3">Pasaporte</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">N° de Documento *</label>
+                <input name="NumeroDocumento" class="form-control" required maxlength="20" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sexo *</label>
+                <select name="IdSexo" class="form-select" required>
+                    <option value="1">Masculino</option>
+                    <option value="2">Femenino</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha de Nacimiento</label>
+                <input type="date" name="FechaNacimiento" class="form-control" />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Teléfono</label>
+                <input name="Telefono" class="form-control" maxlength="15" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Correo</label>
+                <input type="email" name="Correo" id="inputCorreo" class="form-control"
+                       maxlength="254" placeholder="ejemplo@dominio.com" />
+                <div id="feedbackCorreo" class="mt-1" style="font-size: 0.85em;"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Distrito</label>
+                <select name="IdDistrito" class="form-select">
+                    <option value="">-- Seleccione distrito --</option>
+                    @if (ViewBag.Distritos != null)
+                    {
+                        foreach (var d in (IEnumerable<OdontoSystem.Entities.Distrito>)ViewBag.Distritos)
+                        {
+                            <option value="@d.IdDistrito">@d.Nombre (@d.Provincia)</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Dirección</label>
+                <input name="Direccion" class="form-control" maxlength="200" />
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Guardar</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>
+
+@* *@
+@section Scripts {
+    <script>
+        (function () {
+            const input = document.getElementById('inputCorreo');
+            const feedback = document.getElementById('feedbackCorreo');
+            let timeoutId = null;
+
+            if (!input) return;
+
+            input.addEventListener('input', function () {
+                clearTimeout(timeoutId);
+                feedback.innerHTML = '';
+
+                const correo = this.value.trim();
+                if (correo.length < 5) return;
+
+                timeoutId = setTimeout(() => validar(correo), 500);
+            });
+
+            function validar(correo) {
+                fetch('@Url.Action("ValidarCorreo", "Pacientes")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'correo=' + encodeURIComponent(correo)
+                })
+                .then(r => r.json())
+                .then(data => mostrarResultado(data))
+                .catch(() => { });
+            }
+
+            function mostrarResultado(data) {
+                input.classList.remove('is-valid', 'is-invalid');
+
+                if (!data.valido && data.sugerencia) {
+                    // Caso especial: rechazado pero CON sugerencia
+                    input.classList.add('is-invalid');
+                    feedback.innerHTML =
+                        '<span class="text-warning">' +
+                        '<i class="fa-solid fa-lightbulb"></i> ' + data.mensaje +
+                        ' <a href="#" onclick="aceptarSugerencia(\'' + data.correoSugerido + '\'); return false;">' +
+                        '<strong>Sí, corregir</strong></a></span>';
+                }
+                else if (!data.valido) {
+                    // Rechazado sin sugerencia (formato inválido o dominio prohibido)
+                    input.classList.add('is-invalid');
+                    feedback.innerHTML =
+                        '<span class="text-danger"><i class="fa-solid fa-circle-xmark"></i> ' +
+                        data.mensaje + '</span>';
+                }
+                else {
+                    // Válido y sin sugerencias
+                    input.classList.add('is-valid');
+                    feedback.innerHTML =
+                        '<span class="text-success"><i class="fa-solid fa-circle-check"></i> Correo válido</span>';
+                }
+            }
+
+            window.aceptarSugerencia = function (correo) {
+                input.value = correo;
+                // Disparar el evento input para revalidar el correo corregido
+                input.dispatchEvent(new Event('input'));
+            };
+        })();
+    </script>
+}

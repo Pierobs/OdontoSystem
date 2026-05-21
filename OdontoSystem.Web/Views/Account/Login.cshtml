@@ -1,0 +1,331 @@
+﻿@{
+    ViewBag.Title = "Inicio de sesión";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OdontoSystem · Iniciar sesión</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #f2f2f2;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 960px;
+            min-height: 580px;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.12);
+        }
+
+        /* === Lado izquierdo: ilustración === */
+        .login-pic {
+            flex: 1;
+            background: linear-gradient(135deg, #0061ff 0%, #60efff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .login-pic::before {
+                content: '';
+                position: absolute;
+                width: 300px;
+                height: 300px;
+                background: rgba(255,255,255,0.08);
+                border-radius: 50%;
+                top: -100px;
+                left: -100px;
+            }
+
+            .login-pic::after {
+                content: '';
+                position: absolute;
+                width: 200px;
+                height: 200px;
+                background: rgba(255,255,255,0.08);
+                border-radius: 50%;
+                bottom: -80px;
+                right: -50px;
+            }
+
+            .login-pic svg {
+                width: 80%;
+                max-width: 320px;
+                position: relative;
+                z-index: 1;
+            }
+
+        /* === Lado derecho: formulario === */
+        .login-form {
+            flex: 1;
+            padding: 60px 55px 50px 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-form-title {
+            font-size: 28px;
+            color: #333;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+            .login-form-title span {
+                color: #0061ff;
+            }
+
+        /* Inputs estilo underline */
+        .wrap-input {
+            position: relative;
+            border-bottom: 2px solid #d9d9d9;
+            margin-bottom: 28px;
+            transition: border-color 0.3s;
+        }
+
+            .wrap-input.focus-input {
+                border-bottom-color: #0061ff;
+            }
+
+        .label-input {
+            display: block;
+            font-size: 13px;
+            color: #999;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .input-field {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            color: #333;
+            padding: 4px 35px 8px 0;
+            font-family: inherit;
+        }
+
+        .focus-icon {
+            position: absolute;
+            right: 0;
+            bottom: 10px;
+            color: #999;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .wrap-input.focus-input .focus-icon {
+            color: #0061ff;
+        }
+
+        /* Botón */
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #0061ff 0%, #60efff 100%);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+            margin-top: 10px;
+        }
+
+            .btn-login:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px rgba(0, 97, 255, 0.3);
+            }
+
+        /* Recordar y enlaces */
+        .extra-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            font-size: 13px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #555;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .extra-row a {
+            color: #555;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+            .extra-row a:hover {
+                color: #0061ff;
+            }
+
+        .form-footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 14px;
+            color: #555;
+        }
+
+            .form-footer a {
+                color: #0061ff;
+                font-weight: 600;
+                text-decoration: none;
+                margin-left: 5px;
+            }
+
+        /* Alertas */
+        .alert-custom {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .alert-error {
+            background: #ffe5e5;
+            color: #c0392b;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #e3f9e5;
+            color: #2d7a32;
+            border: 1px solid #c3e6cb;
+        }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .login-wrap {
+                flex-direction: column;
+                min-height: auto;
+            }
+
+            .login-pic {
+                padding: 30px;
+                min-height: 180px;
+            }
+
+                .login-pic svg {
+                    max-width: 130px;
+                }
+
+            .login-form {
+                padding: 40px 30px;
+            }
+
+            .login-form-title {
+                font-size: 22px;
+                margin-bottom: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-wrap">
+        <!-- Ilustración (SVG dental) -->
+        <div class="login-pic">
+            <svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 30 C 70 30, 50 55, 50 90 C 50 120, 60 160, 70 195 C 75 210, 90 210, 95 195 L 100 165 L 105 195 C 110 210, 125 210, 130 195 C 140 160, 150 120, 150 90 C 150 55, 130 30, 100 30 Z"
+                      fill="#ffffff" />
+                <ellipse cx="80" cy="70" rx="10" ry="20" fill="rgba(96, 239, 255, 0.45)" />
+                <circle cx="35" cy="50" r="3" fill="rgba(255,255,255,0.7)" />
+                <circle cx="170" cy="80" r="4" fill="rgba(255,255,255,0.6)" />
+                <circle cx="160" cy="40" r="2.5" fill="rgba(255,255,255,0.8)" />
+                <circle cx="25" cy="160" r="3.5" fill="rgba(255,255,255,0.5)" />
+            </svg>
+        </div>
+
+        <!-- Formulario -->
+        <div class="login-form">
+            <div class="login-form-title">
+                Bienvenido a <span>OdontoSystem</span>
+            </div>
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert-custom alert-error">
+                    <i class="fa-solid fa-circle-exclamation me-1"></i> @TempData["Error"]
+                </div>
+            }
+            @if (TempData["Exito"] != null)
+            {
+                <div class="alert-custom alert-success">
+                    <i class="fa-solid fa-circle-check me-1"></i> @TempData["Exito"]
+                </div>
+            }
+
+            @using (Html.BeginForm("Login", "Account", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="wrap-input">
+                    <label class="label-input">Correo institucional</label>
+                    <input class="input-field" type="email" name="correo" required autofocus />
+                    <i class="focus-icon fa-solid fa-envelope"></i>
+                </div>
+
+                <div class="wrap-input">
+                    <label class="label-input">Contraseña</label>
+                    <input class="input-field" type="password" name="password" required />
+                    <i class="focus-icon fa-solid fa-lock"></i>
+                </div>
+
+                <div class="extra-row">
+                    <label class="remember-me">
+                        <input type="checkbox" name="recordar" />
+                        Recordarme
+                    </label>
+                    <a href="#">¿Olvidaste tu contraseña?</a>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fa-solid fa-right-to-bracket me-2"></i> Ingresar
+                </button>
+            }
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.input-field').forEach(input => {
+            input.addEventListener('focus', () => input.closest('.wrap-input').classList.add('focus-input'));
+            input.addEventListener('blur', () => input.closest('.wrap-input').classList.remove('focus-input'));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+﻿@model OdontoSystem.Entities.Paciente
+
+@{
+    ViewBag.Title = "Editar paciente";
+    var distritos = (IEnumerable<OdontoSystem.Entities.Distrito>)ViewBag.Distritos;
+}
+
+<div class="container mt-4">
+    <h2><i class="fa-solid fa-user-pen"></i> Editar paciente</h2>
+    <hr />
+
+    @using (Html.BeginForm("Editar", "Pacientes", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+        @Html.HiddenFor(m => m.IdPaciente)
+        @Html.HiddenFor(m => m.Estado)
+        @Html.HiddenFor(m => m.FechaRegistro)
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Apellido Paterno *</label>
+                <input name="ApellidoPaterno" class="form-control" required maxlength="50"
+                       value="@Model.ApellidoPaterno" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Materno *</label>
+                <input name="ApellidoMaterno" class="form-control" required maxlength="50"
+                       value="@Model.ApellidoMaterno" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Nombres *</label>
+                <input name="Nombres" class="form-control" required maxlength="80"
+                       value="@Model.Nombres" />
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Tipo de Documento *</label>
+                <select name="IdTipoDocumento" class="form-select" required>
+                    <option value="1" selected="@(Model.IdTipoDocumento == 1)">DNI</option>
+                    <option value="2" selected="@(Model.IdTipoDocumento == 2)">Carnet de Extranjería</option>
+                    <option value="3" selected="@(Model.IdTipoDocumento == 3)">Pasaporte</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">N° de Documento *</label>
+                <input name="NumeroDocumento" class="form-control" required maxlength="20"
+                       value="@Model.NumeroDocumento" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Sexo *</label>
+                <select name="IdSexo" class="form-select" required>
+                    <option value="1" selected="@(Model.IdSexo == 1)">Masculino</option>
+                    <option value="2" selected="@(Model.IdSexo == 2)">Femenino</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Fecha de Nacimiento</label>
+                <input type="date" name="FechaNacimiento" class="form-control"
+                       value="@(Model.FechaNacimiento?.ToString("yyyy-MM-dd"))" />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label">Teléfono</label>
+                <input name="Telefono" class="form-control" maxlength="15"
+                       value="@Model.Telefono" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Correo</label>
+                <input type="email" name="Correo" id="inputCorreo" class="form-control"
+                       maxlength="254" placeholder="ejemplo@dominio.com"
+                       value="@Model.Correo" />
+                <div id="feedbackCorreo" class="mt-1" style="font-size: 0.85em;"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Distrito</label>
+                <select name="IdDistrito" class="form-select">
+                    <option value="">-- Seleccione distrito --</option>
+                    @if (distritos != null)
+                    {
+                        foreach (var d in distritos)
+                        {
+                            if (Model.IdDistrito == d.IdDistrito)
+                            {
+                                <option value="@d.IdDistrito" selected>@d.Nombre (@d.Provincia)</option>
+                            }
+                            else
+                            {
+                                <option value="@d.IdDistrito">@d.Nombre (@d.Provincia)</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label">Dirección</label>
+                <input name="Direccion" class="form-control" maxlength="200"
+                       value="@Model.Direccion" />
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">
+                <i class="fa-solid fa-floppy-disk"></i> Actualizar
+            </button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Cancelar
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const input = document.getElementById('inputCorreo');
+            const feedback = document.getElementById('feedbackCorreo');
+            let timeoutId = null;
+
+            if (!input) return;
+
+            input.addEventListener('input', function () {
+                clearTimeout(timeoutId);
+                feedback.innerHTML = '';
+                const correo = this.value.trim();
+                if (correo.length < 5) return;
+                timeoutId = setTimeout(() => validar(correo), 500);
+            });
+
+            function validar(correo) {
+                fetch('@Url.Action("ValidarCorreo", "Pacientes")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'correo=' + encodeURIComponent(correo)
+                })
+                .then(r => r.json())
+                .then(data => mostrarResultado(data))
+                .catch(() => { });
+            }
+
+            function mostrarResultado(data) {
+                input.classList.remove('is-valid', 'is-invalid');
+                if (!data.valido && data.sugerencia) {
+                    input.classList.add('is-invalid');
+                    feedback.innerHTML =
+                        '<span class="text-warning">' +
+                        '<i class="fa-solid fa-lightbulb"></i> ' + data.mensaje +
+                        ' <a href="#" onclick="aceptarSugerencia(\'' + data.correoSugerido + '\'); return false;">' +
+                        '<strong>Sí, corregir</strong></a></span>';
+                }
+                else if (!data.valido) {
+                    input.classList.add('is-invalid');
+                    feedback.innerHTML =
+                        '<span class="text-danger"><i class="fa-solid fa-circle-xmark"></i> ' +
+                        data.mensaje + '</span>';
+                }
+                else {
+                    input.classList.add('is-valid');
+                    feedback.innerHTML =
+                        '<span class="text-success"><i class="fa-solid fa-circle-check"></i> Correo válido</span>';
+                }
+            }
+
+            window.aceptarSugerencia = function (correo) {
+                input.value = correo;
+                input.dispatchEvent(new Event('input'));
+            };
+        })();
+    </script>
+}

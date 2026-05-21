@@ -1,0 +1,64 @@
+﻿@model OdontoSystem.Entities.Cita
+
+@{
+    ViewBag.Title = "Nueva Cita";
+    var pacientes = (IEnumerable<OdontoSystem.Entities.Paciente>)ViewBag.Pacientes;
+    var odontologos = (IEnumerable<OdontoSystem.Entities.Usuario>)ViewBag.Odontologos;
+}
+
+<div class="container mt-4">
+    <h2>Agendar Nueva Cita</h2>
+    <hr />
+
+    @using (Html.BeginForm("Crear", "Citas", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Paciente *</label>
+                <select name="IdPaciente" class="form-select" required>
+                    <option value="">-- Seleccione paciente --</option>
+                    @if (pacientes != null)
+                    {
+                        foreach (var p in pacientes)
+                        {
+                            <option value="@p.IdPaciente">@p.ApellidoPaterno @p.ApellidoMaterno, @p.Nombres</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Odontólogo *</label>
+                <select name="IdOdontologo" class="form-select" required>
+                    <option value="">-- Seleccione odontólogo --</option>
+                    @if (odontologos != null)
+                    {
+                        foreach (var o in odontologos)
+                        {
+                            <option value="@o.IdUsuario">Dr. @o.ApellidoPaterno @o.Nombres</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Fecha *</label>
+                <input type="date" name="FechaCita" class="form-control" required />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Hora *</label>
+                <input type="time" name="HoraCita" class="form-control" required />
+            </div>
+            <div class="col-12">
+                <label class="form-label">Observaciones</label>
+                <textarea name="Observaciones" class="form-control" rows="3" maxlength="500"></textarea>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Agendar</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>

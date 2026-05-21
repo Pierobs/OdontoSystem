@@ -1,0 +1,68 @@
+﻿@model OdontoSystem.Entities.Usuario
+
+@{
+    ViewBag.Title = "Editar Usuario";
+    var roles = (IEnumerable<OdontoSystem.Entities.Rol>)ViewBag.Roles;
+}
+
+<div class="container mt-4">
+    <h2>Editar Usuario</h2>
+    <hr />
+
+    @using (Html.BeginForm("Editar", "Usuarios", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="IdUsuario" value="@Model.IdUsuario" />
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Nombres *</label>
+                <input name="Nombres" class="form-control" value="@Model.Nombres" required maxlength="80" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Paterno *</label>
+                <input name="ApellidoPaterno" class="form-control" value="@Model.ApellidoPaterno" required maxlength="50" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Apellido Materno *</label>
+                <input name="ApellidoMaterno" class="form-control" value="@Model.ApellidoMaterno" required maxlength="50" />
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Correo Institucional</label>
+                <input class="form-control" value="@Model.CorreoInstitucional" disabled />
+                <small class="text-muted">El correo no se puede modificar</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Rol *</label>
+                <select name="IdRol" class="form-select" required>
+                    @if (roles != null)
+                    {
+                        foreach (var r in roles)
+                        {
+                            if (r.IdRol == Model.IdRol)
+                            {
+                                <option value="@r.IdRol" selected>@r.Descripcion</option>
+                            }
+                            else
+                            {
+                                <option value="@r.IdRol">@r.Descripcion</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Nueva contraseña (opcional)</label>
+                <input type="password" name="NuevoPassword" class="form-control" minlength="6" />
+                <small class="text-muted">Déjalo vacío si no quieres cambiarla</small>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Actualizar</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>
