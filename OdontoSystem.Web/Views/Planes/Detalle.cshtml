@@ -1,0 +1,220 @@
+﻿@model OdontoSystem.Entities.PlanTratamiento
+@{
+    ViewBag.Title = "Detalle del Plan";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Plan de Tratamiento</h2>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Volver</a>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Exito"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <strong>Información del Plan</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Paciente:</strong> @Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno @Model.Paciente.ApellidoMaterno</p>
+                    <p><strong>Documento:</strong> @Model.Paciente.NumeroDocumento</p>
+                    <p><strong>Fecha creación:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p>
+                        <strong>Estado:</strong>
+                        @switch (Model.Estado)
+                        {
+                            case "Activo":<span class="badge bg-warning text-dark">Activo</span> break;
+                            case "Pagado": <span class="badge bg-success">Pagado</span> break;
+                            case "Cancelado": <span class="badge bg-danger">Cancelado</span>break;
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <strong>Resumen Financiero</strong>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><td>Monto Total:</td><td class="text-end"><strong>S/. @Model.MontoTotal.ToString("N2")</strong></td></tr>
+                        <tr><td>Abonado:</td><td class="text-end text-success">S/. @Model.MontoAbonado.ToString("N2")</td></tr>
+                        <tr><td>Saldo Pendiente:</td><td class="text-end text-danger"><strong>S/. @Model.Saldo.ToString("N2")</strong></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <strong>Tratamientos incluidos</strong>
+            @if (Model.Estado == "Activo")
+            {
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+                    <i class="fa-solid fa-plus"></i> Agregar tratamiento
+                </button>
+            }
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Tratamiento</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-end">Precio Unit.</th>
+                        <th class="text-end">Subtotal</th>
+                        @if (Model.Estado == "Activo")
+                        {
+                            <th></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int contador = 0; }
+                    @foreach (var d in Model.Detalles)
+                    {
+                        contador++;
+                        <tr>
+                            <td>@contador</td>
+                            <td>@d.Tratamiento.Nombre</td>
+                            <td class="text-center">@d.Cantidad</td>
+                            <td class="text-end">S/. @d.PrecioUnitario.ToString("N2")</td>
+                            <td class="text-end">S/. @d.Subtotal.ToString("N2")</td>
+                            @if (Model.Estado == "Activo")
+                            {
+                                <td>
+                                    <form action="@Url.Action("QuitarDetalle", "Planes")" method="post"
+                                          onsubmit="return confirm('¿Quitar este tratamiento del plan?');"
+                                          style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="idPlanDetalle" value="@d.IdPlanDetalle" />
+                                        <input type="hidden" name="idPlan" value="@Model.IdPlan" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (Model.Estado == "Activo")
+    {
+        <div class="d-flex gap-2 mb-4">
+            @if (Model.Saldo == 0)
+            {
+                <form action="@Url.Action("Cerrar", "Planes")" method="post"
+                      onsubmit="return confirm('¿Cerrar este plan como pagado?');">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.IdPlan" />
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa-solid fa-check"></i> Cerrar plan (pagado)
+                    </button>
+                </form>
+            }
+
+            <form action="@Url.Action("Cancelar", "Planes")" method="post"
+                  onsubmit="return confirm('¿Cancelar este plan? Esta acción no se puede deshacer.');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.IdPlan" />
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fa-solid fa-ban"></i> Cancelar plan
+                </button>
+            </form>
+        </div>
+    }
+
+    @* Modal Agregar tratamiento *@
+    <div class="modal fade" id="modalAgregar" tabindex="-1">
+        <div class="modal-dialog">
+            <form action="@Url.Action("AgregarDetalle", "Planes")" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="idPlan" value="@Model.IdPlan" />
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Agregar Tratamiento</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Tratamiento *</label>
+                            <select name="idTratamiento" id="modalSelectTrat" class="form-select" required>
+                                <option value="">-- Seleccione --</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label">Cantidad *</label>
+                                <input type="number" name="cantidad" class="form-control" min="1" max="20" value="1" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Precio Unit. *</label>
+                                <input type="number" name="precioUnitario" id="modalInputPrecio" class="form-control" step="0.01" min="0" required />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                        <button type="submit" class="btn btn-primary">Agregar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const select = document.getElementById('modalSelectTrat');
+            const inputPrecio = document.getElementById('modalInputPrecio');
+            if (!select) return;
+
+            const tratamientos = [
+                @{
+                    var cat = new OdontoSystem.BLL.Services.CatalogoTratamientoService().Listar(soloActivos: true);
+                    foreach (var t in cat)
+                    {
+                        <text>{ id: @t.IdTratamiento, nombre: '@Html.Raw(t.Nombre.Replace("'", "\\'"))', precio: @t.PrecioBase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) },</text>
+                    }
+                }
+            ];
+
+            tratamientos.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.nombre + ' (S/. ' + t.precio + ')';
+                opt.dataset.precio = t.precio;
+                select.appendChild(opt);
+            });
+
+            select.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                inputPrecio.value = opt.dataset.precio || '';
+            });
+        });
+    </script>
+}

@@ -80,5 +80,34 @@ namespace OdontoSystem.Web.Controllers
             }
             return RedirectToAction("Index");
         }
+        public ActionResult CambiarPassword(int id)
+        {
+            var u = _service.ObtenerPorId(id);
+            if (u == null) return HttpNotFound();
+            return View(u);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult CambiarPassword(int IdUsuario, string NuevaPassword)
+        {
+            try
+            {
+                var u = _service.ObtenerPorId(IdUsuario);
+                if (u == null) return HttpNotFound();
+
+                // Reusamos el método Actualizar pasando solo el password
+                _service.Actualizar(IdUsuario, u.Nombres, u.ApellidoPaterno, u.ApellidoMaterno,
+                                    u.IdRol, NuevaPassword);
+
+                TempData["Exito"] = $"Contraseña de {u.Nombres} {u.ApellidoPaterno} actualizada correctamente";
+                return RedirectToAction("Index");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CambiarPassword", new { id = IdUsuario });
+            }
+        }
     }
 }

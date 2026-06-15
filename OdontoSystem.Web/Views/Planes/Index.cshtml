@@ -1,0 +1,87 @@
+﻿@model IEnumerable<OdontoSystem.Entities.PlanTratamiento>
+@{
+    ViewBag.Title = "Planes de Tratamiento";
+    var paciente = ViewBag.Paciente as OdontoSystem.Entities.Paciente;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            Planes de Tratamiento
+            @if (paciente != null)
+            {
+                <small class="text-muted"> — @paciente.Nombres @paciente.ApellidoPaterno</small>
+            }
+        </h2>
+        <a href="@Url.Action("Crear", new { idPaciente = paciente?.IdPaciente })" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Nuevo Plan
+        </a>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Exito"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <table class="table table-striped">
+            <thead class="table-primary">
+                <tr>
+                    <th>N°</th>
+                    <th>Paciente</th>
+                    <th>Fecha</th>
+                    <th>Tratamientos</th>
+                    <th>Total</th>
+                    <th>Abonado</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{ int contador = 0; }
+                @foreach (var p in Model)
+                {
+                    contador++;
+                    <tr>
+                        <td>@contador</td>
+                        <td>@p.Paciente.Nombres @p.Paciente.ApellidoPaterno</td>
+                        <td>@p.FechaCreacion.ToString("dd/MM/yyyy")</td>
+                        <td>@p.Detalles.Count tratamiento(s)</td>
+                        <td>S/. @p.MontoTotal.ToString("N2")</td>
+                        <td>S/. @p.MontoAbonado.ToString("N2")</td>
+                        <td><strong>S/. @p.Saldo.ToString("N2")</strong></td>
+                        <td>
+                            @switch (p.Estado)
+                            {
+                                case "Activo":<span class="badge bg-warning text-dark">Activo</span> break;
+                                case "Pagado": <span class="badge bg-success">Pagado</span> break;
+                                case "Cancelado": <span class="badge bg-danger">Cancelado</span>break;
+                            }
+                        </td>
+                        <td>
+                            <a href="@Url.Action("Detalle", new { id = p.IdPlan })" class="btn btn-sm btn-outline-info">
+                                <i class="fa-solid fa-eye"></i> Ver
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info">No hay planes registrados.</div>
+    }
+</div>

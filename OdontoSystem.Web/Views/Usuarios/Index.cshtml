@@ -1,15 +1,12 @@
 ﻿@model IEnumerable<OdontoSystem.Entities.Usuario>
-
 @{
     ViewBag.Title = "Gestión de Usuarios";
 }
-
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Gestión de Usuarios</h2>
         <a href="@Url.Action("Crear")" class="btn btn-primary">+ Nuevo Usuario</a>
     </div>
-
     @if (TempData["Exito"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show">
@@ -24,13 +21,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
-
     @if (Model != null && Model.Any())
     {
         <table class="table table-striped">
             <thead class="table-primary">
                 <tr>
-                    <th>#</th>
+                    <th>N°</th>
                     <th>Nombre Completo</th>
                     <th>Correo</th>
                     <th>Rol</th>
@@ -39,10 +35,12 @@
                 </tr>
             </thead>
             <tbody>
+                @{ int contador = 0; }
                 @foreach (var u in Model)
                 {
+                    contador++;
                     <tr>
-                        <td>@u.IdUsuario</td>
+                        <td>@contador</td>
                         <td>@u.ApellidoPaterno @u.ApellidoMaterno, @u.Nombres</td>
                         <td>@u.CorreoInstitucional</td>
                         <td><span class="badge bg-info">@u.Rol.Descripcion</span></td>
@@ -58,10 +56,18 @@
                         </td>
                         <td>
                             <a href="@Url.Action("Editar", new { id = u.IdUsuario })"
-                               class="btn btn-sm btn-outline-primary">Editar</a>
+                               class="btn btn-sm btn-outline-primary" title="Editar usuario">
+                                <i class="fa-solid fa-pen"></i> Editar
+                            </a>
+                            <a href="@Url.Action("CambiarPassword", new { id = u.IdUsuario })"
+                               class="btn btn-sm btn-outline-warning" title="Cambiar contraseña">
+                                <i class="fa-solid fa-key"></i> Contraseña
+                            </a>
                             <a href="@Url.Action("CambiarEstado", new { id = u.IdUsuario })"
-                               class="btn btn-sm btn-outline-warning"
-                               onclick="return confirm('¿Cambiar el estado de este usuario?');">
+                               class="btn btn-sm @(u.Estado == "A" ? "btn-outline-danger" : "btn-outline-success")"
+                               onclick="return confirm('@(u.Estado == "A" ? "¿Desactivar este usuario?" : "¿Reactivar este usuario?")');"
+                               title="@(u.Estado == "A" ? "Desactivar" : "Activar")">
+                                <i class="fa-solid @(u.Estado == "A" ? "fa-user-slash" : "fa-user-check")"></i>
                                 @(u.Estado == "A" ? "Desactivar" : "Activar")
                             </a>
                         </td>

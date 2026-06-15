@@ -1,0 +1,49 @@
+﻿@model IEnumerable<OdontoSystem.Entities.Odontograma>
+@{
+    ViewBag.Title = "Odontogramas del paciente";
+    int idPaciente = (int)ViewBag.IdPaciente;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Odontogramas históricos</h2>
+        <a href="@Url.Action("Index", "Pacientes")" class="btn btn-secondary">← Volver</a>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <table class="table table-striped">
+            <thead class="table-primary">
+                <tr>
+                    <th>#</th>
+                    <th>Fecha registro</th>
+                    <th>Cita asociada</th>
+                    <th>Odontólogo</th>
+                    <th>Piezas registradas</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model)
+                {
+                    <tr>
+                        <td>@o.IdOdontograma</td>
+                        <td>@o.FechaRegistro.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>Cita #@o.IdCita — @o.Cita.FechaCita.ToString("dd/MM/yyyy")</td>
+                        <td>Dr. @o.Cita.Odontologo.Nombres @o.Cita.Odontologo.ApellidoPaterno</td>
+                        <td>@o.DientesEstado.Count</td>
+                        <td>
+                            <a href="@Url.Action("Ver", new { id = o.IdOdontograma })" class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-eye"></i> Ver
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div class="alert alert-info">Este paciente no tiene odontogramas registrados.</div>
+    }
+</div>

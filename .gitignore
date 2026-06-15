@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+# OdontoSystem - Logs de HU-13 (no deben subirse al repo)
+App_Data/Logs/
+
+# Configuración local con secretos (Twilio, connection strings)
+Web.config.local
+appsettings.local.json

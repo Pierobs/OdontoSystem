@@ -1,0 +1,334 @@
+﻿@model OdontoSystem.Entities.Odontograma
+@{
+    ViewBag.Title = "Odontograma";
+    var estadosValidos = ViewBag.EstadosValidos as string[];
+
+    int[] piezasSupDer = { 18, 17, 16, 15, 14, 13, 12, 11 };
+    int[] piezasSupIzq = { 21, 22, 23, 24, 25, 26, 27, 28 };
+    int[] piezasInfDer = { 48, 47, 46, 45, 44, 43, 42, 41 };
+    int[] piezasInfIzq = { 31, 32, 33, 34, 35, 36, 37, 38 };
+}
+
+<style>
+    .superficie {
+        cursor: pointer;
+        stroke: #333;
+        stroke-width: 1;
+        transition: filter 0.15s, stroke-width 0.15s;
+    }
+
+        .superficie:hover {
+            filter: brightness(1.2);
+            stroke-width: 2;
+        }
+
+    .numero-pieza-html {
+        font-size: 11px;
+        font-weight: bold;
+        text-align: center;
+        color: #555;
+    }
+
+    .pieza-wrapper {
+        display: inline-block;
+        margin: 2px;
+        vertical-align: top;
+    }
+
+    .leyenda-color {
+        display: inline-block;
+        width: 18px;
+        height: 18px;
+        border: 1px solid #333;
+        border-radius: 3px;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
+    .arcada {
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .divisor-arcada {
+        display: inline-block;
+        width: 2px;
+        height: 60px;
+        background: #ccc;
+        margin: 0 8px;
+        vertical-align: middle;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Odontograma — @Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno</h2>
+        <a href="@Url.Action("Index", "Citas")" class="btn btn-secondary">← Volver a Citas</a>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <p class="mb-1"><strong>Cita N°:</strong> @Model.IdCita</p>
+                    <p class="mb-1"><strong>Odontólogo:</strong> Dr. @Model.Cita.Odontologo.Nombres @Model.Cita.Odontologo.ApellidoPaterno</p>
+                    <p class="mb-1"><strong>Fecha:</strong> @Model.Cita.FechaCita.ToString("dd/MM/yyyy") @Model.Cita.HoraCita.ToString(@"hh\:mm")</p>
+                    <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">Atendida</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-body">
+                    <strong>Leyenda de estados</strong>
+                    <div class="mt-2" style="font-size: 0.85em; line-height: 1.8;">
+                        <span><span class="leyenda-color" style="background:#FFFFFF"></span> Sano</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#FF4444"></span> Caries</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#4488FF"></span> Curación</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#222"></span> Extracción</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#FFCC00"></span> Corona</span>
+                        <br />
+                        <span><span class="leyenda-color" style="background:#9966CC"></span> Implante</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#888"></span> Ausente</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#FF8800"></span> Endodoncia</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#E91E63"></span> Fractura</span>
+                        <span class="ms-2"><span class="leyenda-color" style="background:#795548"></span> Perno</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white text-center">
+            <strong>Click en cualquier superficie de la pieza dental para registrar su estado</strong>
+            <br /><small>Cada diente tiene 5 superficies: Vestibular, Oclusal, Lingual, Mesial y Distal</small>
+        </div>
+        <div class="card-body text-center" style="background: #fafafa;">
+            <div class="arcada" id="arcadaSuperior"></div>
+            <div style="border-top: 2px dashed #aaa; margin: 15px auto; max-width: 700px;"></div>
+            <div class="arcada" id="arcadaInferior"></div>
+        </div>
+    </div>
+
+    @* Modal para editar pieza/superficie *@
+    <div class="modal fade" id="modalPieza" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        Pieza <span id="modalNumeroPieza"></span> — Superficie <span id="modalSuperficie"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Estado clínico *</label>
+                        <select id="selectEstado" class="form-select" required>
+                            @foreach (var e in estadosValidos)
+                            {
+                                <option value="@e">@e</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observación</label>
+                        <textarea id="inputObservacion" class="form-control" rows="3" maxlength="500"
+                                  placeholder="Notas adicionales sobre esta superficie..."></textarea>
+                    </div>
+                    <div id="feedbackPieza"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarPieza">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        const idOdontograma = @Model.IdOdontograma;
+        let piezaSeleccionada = null;
+        let superficieSeleccionada = null;
+        const modal = new bootstrap.Modal(document.getElementById('modalPieza'));
+
+        const coloresEstado = {
+            'Sano': '#FFFFFF',
+            'Caries': '#FF4444',
+            'Curacion': '#4488FF',
+            'Extraccion': '#222',
+            'Corona': '#FFCC00',
+            'Implante': '#9966CC',
+            'Ausente': '#888',
+            'Endodoncia': '#FF8800',
+            'Fractura': '#E91E63',
+            'Perno': '#795548'
+        };
+
+        // Almacén de estados {pieza: {superficie: estado}}
+        const estadosActuales = {};
+
+        // Cargar estados iniciales desde el servidor
+        function cargarEstadosIniciales() {
+            return fetch('@Url.Action("ObtenerEstados", "Odontograma")?idOdontograma=' + idOdontograma)
+                .then(r => r.json())
+                .then(dientes => {
+                    dientes.forEach(d => {
+                        if (!estadosActuales[d.numeroPieza]) estadosActuales[d.numeroPieza] = {};
+                        estadosActuales[d.numeroPieza][d.superficie] = d.estado;
+                    });
+                });
+        }
+
+        /**
+         * Genera el SVG de UN diente con 5 superficies clickeables.
+         * Layout (vista oclusal):
+         *   ┌──────────────┐
+         *   │  Vestibular   │   ← arriba
+         *   ├───┬──────┬───┤
+         *   │ M │Oclus.│ D │   ← Mesial - Oclusal - Distal
+         *   ├───┴──────┴───┤
+         *   │   Lingual    │   ← abajo
+         *   └──────────────┘
+         */
+        function generarDienteSVG(numero) {
+            const size = 50;
+            const t = 12;  // grosor de las superficies externas
+            const m = size - 2*t; // tamaño centro
+
+            const estados = estadosActuales[numero] || {};
+            const colorV = coloresEstado[estados['Vestibular']] || '#FFFFFF';
+            const colorO = coloresEstado[estados['Oclusal']] || coloresEstado[estados['Completo']] || '#FFFFFF';
+            const colorL = coloresEstado[estados['Lingual']] || '#FFFFFF';
+            const colorM = coloresEstado[estados['Mesial']] || '#FFFFFF';
+            const colorD = coloresEstado[estados['Distal']] || '#FFFFFF';
+
+            return `
+                <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Vestibular (arriba) -->
+                    <polygon class="superficie" data-pieza="${numero}" data-superficie="Vestibular"
+                        points="0,0 ${size},0 ${size-t},${t} ${t},${t}" fill="${colorV}" />
+                    <!-- Lingual (abajo) -->
+                    <polygon class="superficie" data-pieza="${numero}" data-superficie="Lingual"
+                        points="${t},${size-t} ${size-t},${size-t} ${size},${size} 0,${size}" fill="${colorL}" />
+                    <!-- Mesial (izquierda) -->
+                    <polygon class="superficie" data-pieza="${numero}" data-superficie="Mesial"
+                        points="0,0 ${t},${t} ${t},${size-t} 0,${size}" fill="${colorM}" />
+                    <!-- Distal (derecha) -->
+                    <polygon class="superficie" data-pieza="${numero}" data-superficie="Distal"
+                        points="${size},0 ${size},${size} ${size-t},${size-t} ${size-t},${t}" fill="${colorD}" />
+                    <!-- Oclusal (centro) -->
+                    <rect class="superficie" data-pieza="${numero}" data-superficie="Oclusal"
+                        x="${t}" y="${t}" width="${m}" height="${m}" fill="${colorO}" />
+                </svg>
+            `;
+        }
+
+        function generarPieza(numero, esSuperior) {
+            const svg = generarDienteSVG(numero);
+            const numeroDiv = `<div class="numero-pieza-html">${numero}</div>`;
+
+            // En arcada superior: número arriba, diente abajo
+            // En arcada inferior: diente arriba, número abajo (más natural)
+            if (esSuperior) {
+                return `<div class="pieza-wrapper">${numeroDiv}${svg}</div>`;
+            } else {
+                return `<div class="pieza-wrapper">${svg}${numeroDiv}</div>`;
+            }
+        }
+
+        function renderizarArcadas() {
+            const piezasSupDer = [18, 17, 16, 15, 14, 13, 12, 11];
+            const piezasSupIzq = [21, 22, 23, 24, 25, 26, 27, 28];
+            const piezasInfDer = [48, 47, 46, 45, 44, 43, 42, 41];
+            const piezasInfIzq = [31, 32, 33, 34, 35, 36, 37, 38];
+
+            const arcadaSup = document.getElementById('arcadaSuperior');
+            const arcadaInf = document.getElementById('arcadaInferior');
+
+            arcadaSup.innerHTML =
+                piezasSupDer.map(n => generarPieza(n, true)).join('') +
+                '<span class="divisor-arcada"></span>' +
+                piezasSupIzq.map(n => generarPieza(n, true)).join('');
+
+            arcadaInf.innerHTML =
+                piezasInfDer.map(n => generarPieza(n, false)).join('') +
+                '<span class="divisor-arcada"></span>' +
+                piezasInfIzq.map(n => generarPieza(n, false)).join('');
+        }
+
+        // Click en cualquier superficie (delegación)
+        document.addEventListener('click', function (e) {
+            if (e.target.classList && e.target.classList.contains('superficie')) {
+                piezaSeleccionada = e.target.dataset.pieza;
+                superficieSeleccionada = e.target.dataset.superficie;
+                document.getElementById('modalNumeroPieza').textContent = piezaSeleccionada;
+                document.getElementById('modalSuperficie').textContent = superficieSeleccionada;
+
+                // Pre-seleccionar el estado actual si existe
+                const estadoActual = (estadosActuales[piezaSeleccionada] || {})[superficieSeleccionada];
+                if (estadoActual) {
+                    document.getElementById('selectEstado').value = estadoActual;
+                } else {
+                    document.getElementById('selectEstado').value = 'Sano';
+                }
+                document.getElementById('inputObservacion').value = '';
+                document.getElementById('feedbackPieza').innerHTML = '';
+
+                modal.show();
+            }
+        });
+
+        // Guardar pieza
+        document.getElementById('btnGuardarPieza').addEventListener('click', function () {
+            const estado = document.getElementById('selectEstado').value;
+            const observacion = document.getElementById('inputObservacion').value;
+            const feedback = document.getElementById('feedbackPieza');
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]');
+            const formData = new FormData();
+            formData.append('idOdontograma', idOdontograma);
+            formData.append('numeroPieza', piezaSeleccionada);
+            formData.append('estado', estado);
+            formData.append('superficie', superficieSeleccionada);
+            formData.append('observacion', observacion);
+            if (token) formData.append('__RequestVerificationToken', token.value);
+
+            feedback.innerHTML = '<span class="text-secondary">Guardando...</span>';
+
+            fetch('@Url.Action("RegistrarPieza", "Odontograma")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Actualizar el almacén local
+                    if (!estadosActuales[piezaSeleccionada]) estadosActuales[piezaSeleccionada] = {};
+                    estadosActuales[piezaSeleccionada][superficieSeleccionada] = estado;
+
+                    // Repintar la superficie específica
+                    const sup = document.querySelector(
+                        '.superficie[data-pieza="' + piezaSeleccionada + '"][data-superficie="' + superficieSeleccionada + '"]'
+                    );
+                    if (sup) sup.setAttribute('fill', coloresEstado[estado]);
+
+                    feedback.innerHTML = '<span class="text-success">✅ ' + data.mensaje + '</span>';
+                    setTimeout(() => modal.hide(), 800);
+                } else {
+                    feedback.innerHTML = '<span class="text-danger">❌ ' + data.mensaje + '</span>';
+                }
+            })
+            .catch(() => {
+                feedback.innerHTML = '<span class="text-danger">Error al guardar</span>';
+            });
+        });
+
+        // Inicialización
+        cargarEstadosIniciales().then(renderizarArcadas);
+    </script>
+}

@@ -1,5 +1,5 @@
-﻿using System.Web;
-using System.Web.Mvc;
+﻿using System.Web.Mvc;
+using OdontoSystem.Web.Filters;
 
 namespace OdontoSystem.Web
 {
@@ -7,7 +7,8 @@ namespace OdontoSystem.Web
     {
         public static void RegisterGlobalFilters(GlobalFilterCollection filters)
         {
-            filters.Add(new HandleErrorAttribute());
+            filters.Add(new ManejadorErrorGlobalAttribute());
+            filters.Add(new RequiereCambioPasswordAttribute());
         }
     }
 }

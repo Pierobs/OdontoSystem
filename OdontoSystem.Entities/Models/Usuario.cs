@@ -17,10 +17,16 @@ namespace OdontoSystem.Entities
         public byte IdRol { get; set; }
         public string Estado { get; set; }
         public DateTime FechaCreacion { get; set; }
+
+        // Nuevas propiedades para política de contraseñas
+        public bool DebeCambiarPassword { get; set; }
+        public DateTime? FechaUltimoCambioPassword { get; set; }
+
         public virtual Rol Rol { get; set; }
         public virtual ICollection<Cita> CitasComoOdontologo { get; set; }
         public virtual ICollection<Evolucion> Evoluciones { get; set; }
         public virtual ICollection<Pago> PagosRegistrados { get; set; }
+
         public Usuario()
         {
             CitasComoOdontologo = new HashSet<Cita>();

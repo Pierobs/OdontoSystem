@@ -1,0 +1,225 @@
+﻿@{
+    ViewBag.Title = "Mi Calendario de Disponibilidad";
+    var odontologo = ViewBag.Odontologo as OdontoSystem.Entities.Usuario;
+    string rol = Session["Rol"]?.ToString() ?? "";
+
+    string cssCalendar = "https://cdn.jsdelivr.net/npm/fullcalendar" + "@" + "6.1.11/index.global.min.css";
+    string jsCalendar = "https://cdn.jsdelivr.net/npm/fullcalendar" + "@" + "6.1.11/index.global.min.js";
+    string jsLocale = "https://cdn.jsdelivr.net/npm/" + "@" + "fullcalendar/core" + "@" + "6.1.11/locales/es.global.min.js";
+}
+
+<div class="container-fluid mt-4">
+    <link href="@cssCalendar" rel="stylesheet" />
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2><i class="fa-solid fa-calendar-days"></i> Calendario de Disponibilidad</h2>
+            <p class="text-muted mb-0">
+                Dr. @odontologo.Nombres @odontologo.ApellidoPaterno
+                @if (rol == "Administrador")
+                {
+                    <a href="@Url.Action("Index")" class="btn btn-sm btn-outline-secondary ms-2">
+                        <i class="fa-solid fa-user-doctor"></i> Cambiar odontólogo
+                    </a>
+                }
+            </p>
+        </div>
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalReplicar">
+            <i class="fa-solid fa-copy"></i> Replicar semana
+        </button>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <div class="alert alert-info">
+        <i class="fa-solid fa-circle-info"></i>
+        <strong>¿Cómo funciona?</strong>
+        Click y arrastra en el calendario para marcar bloques de disponibilidad.
+        Click en un bloque existente para eliminarlo.
+    </div>
+
+    <div id="calendar"></div>
+</div>
+
+@* Modal Replicar semana *@
+<div class="modal fade" id="modalReplicar" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Replicar semana actual</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">
+                    Esta opción copia los bloques de la semana visible a las próximas N semanas.
+                    Útil para configurar tu horario habitual rápidamente.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label">¿Cuántas semanas a replicar?</label>
+                    <input type="number" id="numSemanas" class="form-control" value="4" min="1" max="12" />
+                    <small class="text-muted">Entre 1 y 12 semanas</small>
+                </div>
+                <div id="feedbackReplicar"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarReplicar">Replicar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script src="@jsCalendar"></script>
+    <script src="@jsLocale"></script>
+
+    <script>
+        const idOdontologo = @odontologo.IdUsuario;
+        let calendar;
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                locale: 'es',
+                initialView: 'timeGridWeek',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                slotMinTime: '07:00:00',
+                slotMaxTime: '22:00:00',
+                allDaySlot: false,
+                selectable: true,
+                selectMirror: true,
+                editable: false,
+                eventOverlap: false,
+                height: 'auto',
+
+                events: function (info, successCallback, failureCallback) {
+                    fetch('@Url.Action("Eventos", "Disponibilidad")?idOdontologo=' + idOdontologo +
+                          '&start=' + info.startStr + '&end=' + info.endStr)
+                        .then(r => r.json())
+                        .then(data => successCallback(data))
+                        .catch(err => failureCallback(err));
+                },
+
+                select: function (info) {
+                    // En vista de Mes no se pueden crear bloques (no tiene horas)
+                    if (calendar.view.type === 'dayGridMonth') {
+                        alert('⚠️ Para marcar disponibilidad, cambie a vista "Semana" o "Día". En la vista de mes solo puede ver los bloques.');
+                        calendar.unselect();
+                        return;
+                    }
+
+                    const fecha = info.startStr.substring(0, 10);
+                    const horaInicio = info.startStr.substring(11, 16);
+                    const horaFin = info.endStr.substring(11, 16);
+
+                    // Validar que tenemos horas válidas
+                    if (!horaInicio || !horaFin || horaInicio.length !== 5 || horaFin.length !== 5) {
+                        alert('⚠️ Seleccione un rango de horas válido arrastrando sobre el calendario.');
+                        calendar.unselect();
+                        return;
+                    }
+
+                    crearBloque(fecha, horaInicio, horaFin);
+                    calendar.unselect();
+                },
+
+                eventClick: function (info) {
+                    if (confirm('¿Eliminar este bloque de disponibilidad?')) {
+                        eliminarBloque(info.event.id);
+                    }
+                }
+            });
+
+            calendar.render();
+        });
+
+        function getToken() {
+            const t = document.querySelector('input[name="__RequestVerificationToken"]');
+            return t ? t.value : '';
+        }
+
+        function crearBloque(fecha, horaInicio, horaFin) {
+            const fd = new FormData();
+            fd.append('idOdontologo', idOdontologo);
+            fd.append('fecha', fecha);
+            fd.append('horaInicio', horaInicio);
+            fd.append('horaFin', horaFin);
+            fd.append('__RequestVerificationToken', getToken());
+
+            fetch('@Url.Action("Crear", "Disponibilidad")', {
+                method: 'POST',
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    calendar.refetchEvents();
+                } else {
+                    alert('❌ ' + data.mensaje);
+                }
+            })
+            .catch(() => alert('Error al guardar el bloque'));
+        }
+
+        function eliminarBloque(idDisponibilidad) {
+            const fd = new FormData();
+            fd.append('idDisponibilidad', idDisponibilidad);
+            fd.append('__RequestVerificationToken', getToken());
+
+            fetch('@Url.Action("Eliminar", "Disponibilidad")', {
+                method: 'POST',
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    calendar.refetchEvents();
+                } else {
+                    alert('❌ ' + data.mensaje);
+                }
+            });
+        }
+
+        document.getElementById('btnConfirmarReplicar').addEventListener('click', function () {
+            const numSemanas = document.getElementById('numSemanas').value;
+            const feedback = document.getElementById('feedbackReplicar');
+
+            const view = calendar.view;
+            let fechaInicio = view.activeStart.toISOString().substring(0, 10);
+
+            feedback.innerHTML = '<span class="text-secondary">Replicando...</span>';
+
+            const fd = new FormData();
+            fd.append('idOdontologo', idOdontologo);
+            fd.append('fechaInicioSemana', fechaInicio);
+            fd.append('semanas', numSemanas);
+            fd.append('__RequestVerificationToken', getToken());
+
+            fetch('@Url.Action("ReplicarSemana", "Disponibilidad")', {
+                method: 'POST',
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    feedback.innerHTML = '<span class="text-success">✅ ' + data.mensaje + '</span>';
+                    calendar.refetchEvents();
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('modalReplicar')).hide();
+                    }, 1500);
+                } else {
+                    feedback.innerHTML = '<span class="text-danger">❌ ' + data.mensaje + '</span>';
+                }
+            });
+        });
+    </script>
+}

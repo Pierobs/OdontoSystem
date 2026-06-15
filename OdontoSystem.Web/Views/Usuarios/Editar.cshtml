@@ -1,68 +1,139 @@
 ﻿@model OdontoSystem.Entities.Usuario
-
 @{
     ViewBag.Title = "Editar Usuario";
-    var roles = (IEnumerable<OdontoSystem.Entities.Rol>)ViewBag.Roles;
+    var roles = ViewBag.Roles as IEnumerable<OdontoSystem.Entities.Rol>;
 }
 
 <div class="container mt-4">
-    <h2>Editar Usuario</h2>
-    <hr />
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fa-solid fa-user-pen"></i> Editar Usuario</h2>
+        <a href="@Url.Action("Index")" class="btn btn-secondary">← Volver</a>
+    </div>
 
-    @using (Html.BeginForm("Editar", "Usuarios", FormMethod.Post))
+    @if (TempData["Error"] != null)
     {
-        @Html.AntiForgeryToken()
-        <input type="hidden" name="IdUsuario" value="@Model.IdUsuario" />
-
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Nombres *</label>
-                <input name="Nombres" class="form-control" value="@Model.Nombres" required maxlength="80" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Apellido Paterno *</label>
-                <input name="ApellidoPaterno" class="form-control" value="@Model.ApellidoPaterno" required maxlength="50" />
-            </div>
-            <div class="col-md-4">
-                <label class="form-label">Apellido Materno *</label>
-                <input name="ApellidoMaterno" class="form-control" value="@Model.ApellidoMaterno" required maxlength="50" />
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Correo Institucional</label>
-                <input class="form-control" value="@Model.CorreoInstitucional" disabled />
-                <small class="text-muted">El correo no se puede modificar</small>
-            </div>
-            <div class="col-md-6">
-                <label class="form-label">Rol *</label>
-                <select name="IdRol" class="form-select" required>
-                    @if (roles != null)
-                    {
-                        foreach (var r in roles)
-                        {
-                            if (r.IdRol == Model.IdRol)
-                            {
-                                <option value="@r.IdRol" selected>@r.Descripcion</option>
-                            }
-                            else
-                            {
-                                <option value="@r.IdRol">@r.Descripcion</option>
-                            }
-                        }
-                    }
-                </select>
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label">Nueva contraseña (opcional)</label>
-                <input type="password" name="NuevoPassword" class="form-control" minlength="6" />
-                <small class="text-muted">Déjalo vacío si no quieres cambiarla</small>
-            </div>
-        </div>
-
-        <div class="mt-4">
-            <button type="submit" class="btn btn-success">Actualizar</button>
-            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["Exito"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <strong>Datos del usuario</strong>
+                </div>
+                <div class="card-body">
+                    <form action="@Url.Action("Editar", "Usuarios")" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="IdUsuario" value="@Model.IdUsuario" />
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">Correo institucional</label>
+                                <input type="email" class="form-control" value="@Model.CorreoInstitucional" readonly />
+                                <small class="text-muted">El correo no se puede modificar</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Nombres *</label>
+                                <input type="text" name="Nombres" class="form-control"
+                                       value="@Model.Nombres" required maxlength="100" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Apellido Paterno *</label>
+                                <input type="text" name="ApellidoPaterno" class="form-control"
+                                       value="@Model.ApellidoPaterno" required maxlength="50" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Apellido Materno</label>
+                                <input type="text" name="ApellidoMaterno" class="form-control"
+                                       value="@Model.ApellidoMaterno" maxlength="50" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Rol *</label>
+                                <select name="IdRol" class="form-select" required>
+                                    @foreach (var r in roles)
+                                    {
+                                        if (r.IdRol == Model.IdRol)
+                                        {
+                                            <option value="@r.IdRol" selected>@r.Descripcion</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@r.IdRol">@r.Descripcion</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Estado actual</label>
+                                <div>
+                                    @if (Model.Estado == "A")
+                                    {
+                                        <span class="badge bg-success fs-6">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary fs-6">Inactivo</span>
+                                    }
+                                    <a href="@Url.Action("CambiarEstado", new { id = Model.IdUsuario })"
+                                       class="btn btn-sm btn-outline-warning ms-2"
+                                       onclick="return confirm('¿Cambiar el estado de este usuario?');">
+                                        <i class="fa-solid fa-rotate"></i> Cambiar estado
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Campo oculto necesario: vacío para que el service NO toque el hash *@
+                        <input type="hidden" name="NuevoPassword" value="" />
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fa-solid fa-floppy-disk"></i> Guardar cambios
+                            </button>
+                            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <strong><i class="fa-solid fa-key"></i> Cambiar contraseña</strong>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        Como administrador, puede asignar una nueva contraseña a este usuario sin necesidad de conocer la anterior.
+                    </p>
+                    <a href="@Url.Action("CambiarPassword", new { id = Model.IdUsuario })"
+                       class="btn btn-warning w-100">
+                        <i class="fa-solid fa-key"></i> Cambiar contraseña
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-body">
+                    <p class="mb-1"><strong>Fecha de creación:</strong></p>
+                    <p class="text-muted mb-0">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

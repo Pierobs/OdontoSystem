@@ -1,0 +1,34 @@
+﻿@{
+    ViewBag.Title = "Seleccionar Odontólogo";
+    var odontologos = ViewBag.Odontologos as IEnumerable<OdontoSystem.Entities.Usuario>;
+}
+
+<div class="container mt-4">
+    <h2><i class="fa-solid fa-user-doctor"></i> Seleccione un odontólogo</h2>
+    <p class="text-muted">Como administrador, puede ver y modificar el calendario de cualquier odontólogo.</p>
+    <hr />
+
+    <div class="row g-3">
+        @foreach (var o in odontologos)
+        {
+            <div class="col-md-4">
+                <a href="@Url.Action("Index", new { idOdontologo = o.IdUsuario })"
+                   class="card text-decoration-none text-dark h-100 shadow-sm hover-shadow"
+                   style="transition: transform 0.2s;">
+                    <div class="card-body text-center">
+                        <i class="fa-solid fa-user-doctor fa-3x text-primary mb-2"></i>
+                        <h5 class="card-title">Dr. @o.Nombres @o.ApellidoPaterno</h5>
+                        <p class="text-muted mb-0">@o.CorreoInstitucional</p>
+                    </div>
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1) !important;
+    }
+</style>

@@ -23,6 +23,7 @@ namespace OdontoSystem.Entities
         public string Correo { get; set; }
         public int? IdDistrito { get; set; }
         public string Direccion { get; set; }
+        public bool TelefonoVerificado { get; set; }
 
         /// <summary>'A' = Activo, 'I' = Inactivo (soft delete).</summary>
         public string Estado { get; set; }

@@ -1,0 +1,160 @@
+﻿@{
+    ViewBag.Title = "Nuevo Plan de Tratamiento";
+    var pacientes = ViewBag.Pacientes as IEnumerable<OdontoSystem.Entities.Paciente>;
+    var tratamientos = ViewBag.Tratamientos as IEnumerable<OdontoSystem.Entities.CatalogoTratamiento>;
+    int? idPacienteSel = ViewBag.IdPacienteSeleccionado as int?;
+}
+
+<div class="container mt-4">
+    <h2>Nuevo Plan de Tratamiento</h2>
+    <hr />
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @using (Html.BeginForm("Crear", "Planes", FormMethod.Post, new { id = "formPlan" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Paciente *</label>
+                <select name="idPaciente" class="form-select" required>
+                    <option value="">-- Seleccione paciente --</option>
+                    @if (pacientes != null)
+                    {
+                        foreach (var p in pacientes)
+                        {
+                            <option value="@p.IdPaciente" selected="@(idPacienteSel == p.IdPaciente)">
+                                @p.ApellidoPaterno @p.ApellidoMaterno, @p.Nombres
+                            </option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Tratamientos del Plan</h4>
+        <div id="lineasContainer">
+            @* Filas dinámicas de tratamientos *@
+        </div>
+
+        <button type="button" id="btnAgregarLinea" class="btn btn-outline-primary mt-2">
+            <i class="fa-solid fa-plus"></i> Agregar tratamiento
+        </button>
+
+        <div class="row mt-4">
+            <div class="col-md-4 offset-md-8">
+                <div class="card">
+                    <div class="card-body text-end">
+                        <h5>Total: <span id="montoTotal">S/. 0.00</span></h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Crear Plan</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        const tratamientos = [
+            @foreach (var t in tratamientos)
+            {
+                <text>{ id: @t.IdTratamiento, nombre: '@Html.Raw(t.Nombre.Replace("'", "\\'"))', precio: @t.PrecioBase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) },</text>
+            }
+        ];
+
+        const container = document.getElementById('lineasContainer');
+        const btnAgregar = document.getElementById('btnAgregarLinea');
+        const totalSpan = document.getElementById('montoTotal');
+
+        function crearLinea() {
+            const div = document.createElement('div');
+            div.className = 'row g-2 mb-2 linea-tratamiento';
+
+            const opciones = tratamientos.map(t =>
+                '<option value="' + t.id + '" data-precio="' + t.precio + '">' + t.nombre + ' (S/. ' + t.precio + ')</option>'
+            ).join('');
+
+            div.innerHTML =
+                '<div class="col-md-5">' +
+                    '<select name="idTratamiento" class="form-select select-tratamiento" required>' +
+                        '<option value="">-- Tratamiento --</option>' + opciones +
+                    '</select>' +
+                '</div>' +
+                '<div class="col-md-2">' +
+                    '<input type="number" name="cantidad" class="form-control input-cantidad" placeholder="Cant." min="1" max="20" value="1" required />' +
+                '</div>' +
+                '<div class="col-md-2">' +
+                    '<input type="number" name="precioUnitario" class="form-control input-precio" placeholder="Precio" step="0.01" min="0" required />' +
+                '</div>' +
+                '<div class="col-md-2">' +
+                    '<input type="text" class="form-control subtotal-display" readonly placeholder="Subtotal" />' +
+                '</div>' +
+                '<div class="col-md-1">' +
+                    '<button type="button" class="btn btn-outline-danger btn-quitar"><i class="fa-solid fa-xmark"></i></button>' +
+                '</div>';
+
+            container.appendChild(div);
+
+            const selectTrat = div.querySelector('.select-tratamiento');
+            const inputCant = div.querySelector('.input-cantidad');
+            const inputPrecio = div.querySelector('.input-precio');
+            const subtotalDisp = div.querySelector('.subtotal-display');
+            const btnQuitar = div.querySelector('.btn-quitar');
+
+            selectTrat.addEventListener('change', function () {
+                const opt = this.options[this.selectedIndex];
+                inputPrecio.value = opt.dataset.precio || '';
+                actualizar();
+            });
+
+            inputCant.addEventListener('input', actualizar);
+            inputPrecio.addEventListener('input', actualizar);
+
+            btnQuitar.addEventListener('click', function () {
+                div.remove();
+                actualizarTotal();
+            });
+
+            function actualizar() {
+                const cant = parseFloat(inputCant.value) || 0;
+                const precio = parseFloat(inputPrecio.value) || 0;
+                subtotalDisp.value = 'S/. ' + (cant * precio).toFixed(2);
+                actualizarTotal();
+            }
+        }
+
+        function actualizarTotal() {
+            let total = 0;
+            document.querySelectorAll('.linea-tratamiento').forEach(linea => {
+                const cant = parseFloat(linea.querySelector('.input-cantidad').value) || 0;
+                const precio = parseFloat(linea.querySelector('.input-precio').value) || 0;
+                total += cant * precio;
+            });
+            totalSpan.textContent = 'S/. ' + total.toFixed(2);
+        }
+
+        btnAgregar.addEventListener('click', crearLinea);
+
+        // Crear primera línea por defecto
+        crearLinea();
+
+        // Validar antes de enviar
+        document.getElementById('formPlan').addEventListener('submit', function (e) {
+            const lineas = document.querySelectorAll('.linea-tratamiento');
+            if (lineas.length === 0) {
+                e.preventDefault();
+                alert('Debe agregar al menos un tratamiento al plan');
+                return;
+            }
+        });
+    </script>
+}
