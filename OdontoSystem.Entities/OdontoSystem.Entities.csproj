@@ -43,10 +43,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Models\CatalogoTratamiento.cs" />
+    <Compile Include="Models\CatalogoTratamientoEstado.cs" />
     <Compile Include="Models\Cita.cs" />
     <Compile Include="Models\Dienteestado.cs" />
     <Compile Include="Models\Distrito.cs" />
     <Compile Include="Models\Evolucion.cs" />
+    <Compile Include="Models\HistorialDienteEstado.cs" />
     <Compile Include="Models\HistorialEstadoCita.cs" />
     <Compile Include="Models\Odontograma.cs" />
     <Compile Include="Models\Paciente.cs" />
