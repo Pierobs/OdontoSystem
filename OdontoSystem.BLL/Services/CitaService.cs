@@ -99,7 +99,8 @@ namespace OdontoSystem.BLL.Services
             }
         }
 
-        public void Reprogramar(int id, DateTime nuevaFecha, TimeSpan nuevaHora, string motivo, int? idUsuario)
+        public void Reprogramar(int id, DateTime nuevaFecha, TimeSpan nuevaHora, string motivo,
+                         int? idUsuario, int? nuevoIdOdontologo = null)
         {
             if (string.IsNullOrWhiteSpace(motivo))
                 throw new InvalidOperationException("Debe ingresar un motivo para reprogramar la cita");
@@ -117,17 +118,26 @@ namespace OdontoSystem.BLL.Services
                 // Validar nueva fecha/hora
                 ValidarFechaHoraCita(nuevaFecha, nuevaHora);
 
-                // Validar capacidad y odontólogo, excluyendo esta misma cita
+                // Validar capacidad global (excluyendo esta misma cita)
                 ValidarCapacidadSlot(ctx, nuevaFecha, nuevaHora, idCitaExcluir: id);
-                ValidarOdontologoDisponible(ctx, cita.IdOdontologo, nuevaFecha, nuevaHora, idCitaExcluir: id);
+
+                // Determinar qué odontólogo usar
+                int idOdontologoFinal = nuevoIdOdontologo.HasValue && nuevoIdOdontologo.Value != cita.IdOdontologo
+                    ? nuevoIdOdontologo.Value
+                    : cita.IdOdontologo;
+
+                // Validar disponibilidad del odontólogo (nuevo o el mismo)
+                ValidarOdontologoDisponible(ctx, idOdontologoFinal, nuevaFecha, nuevaHora, idCitaExcluir: id);
 
                 string motivoCompleto = $"Reprogramada de {cita.FechaCita:dd/MM/yyyy} {cita.HoraCita:hh\\:mm} → " +
                                         $"{nuevaFecha:dd/MM/yyyy} {nuevaHora:hh\\:mm}. Motivo: {motivo.Trim()}";
 
+                // Aplicar cambios
                 cita.FechaCita = nuevaFecha.Date;
                 cita.HoraCita = nuevaHora;
                 cita.Motivo = motivo.Trim();
                 cita.FechaModificacion = DateTime.Now;
+                cita.IdOdontologo = idOdontologoFinal; // actualiza el odontólogo si cambió
 
                 RegistrarHistorial(ctx, id, "Pendiente", "Reprogramada", motivoCompleto, idUsuario);
                 ctx.SaveChanges();
@@ -141,13 +151,8 @@ namespace OdontoSystem.BLL.Services
         private void ValidarFechaHoraCita(DateTime fecha, TimeSpan hora)
         {
             var fechaHora = fecha.Date + hora;
-
             if (fechaHora < DateTime.Now)
                 throw new InvalidOperationException("No se puede agendar una cita en una fecha u hora pasada");
-
-            if (!HorarioAtencion.EsSlotValido(hora))
-                throw new InvalidOperationException(
-                    $"La hora seleccionada no es válida. Horario de atención: {HorarioAtencion.DescripcionHorario}");
         }
 
         private void ValidarCapacidadSlot(OdontoContext ctx, DateTime fecha, TimeSpan hora, int? idCitaExcluir)
@@ -165,8 +170,16 @@ namespace OdontoSystem.BLL.Services
         }
 
         private void ValidarOdontologoDisponible(OdontoContext ctx, int idOdontologo, DateTime fecha,
-                                                  TimeSpan hora, int? idCitaExcluir)
+                                          TimeSpan hora, int? idCitaExcluir)
         {
+            // Verificar que el odontólogo tiene ese slot en su calendario
+            var dispService = new DisponibilidadService();
+            if (!dispService.EstaDisponible(idOdontologo, fecha, hora))
+                throw new InvalidOperationException(
+                    "El odontólogo no tiene disponibilidad registrada en ese horario. " +
+                    "Consulte el calendario del odontólogo antes de agendar.");
+
+            // Verificar que el odontólogo no tenga ya otra cita en ese slot
             bool ocupado = ctx.Citas.Any(c =>
                 c.IdOdontologo == idOdontologo &&
                 c.FechaCita == fecha.Date &&
@@ -237,5 +250,33 @@ namespace OdontoSystem.BLL.Services
                           .ToList();
             }
         }
+        public Paciente ObtenerPaciente(int idPaciente)
+        {
+            using (var ctx = new OdontoContext())
+            {
+                return ctx.Pacientes.FirstOrDefault(p => p.IdPaciente == idPaciente);
+            }
+        }
+
+        public Usuario ObtenerOdontologo(int idOdontologo)
+        {
+            using (var ctx = new OdontoContext())
+            {
+                return ctx.Usuarios.FirstOrDefault(u => u.IdUsuario == idOdontologo);
+            }
+        }
+
+        public IEnumerable<Cita> ListarCitasDelDia(DateTime fecha, int idOdontologo)
+        {
+            using (var ctx = new OdontoContext())
+            {
+                return ctx.Citas
+                          .Where(c => c.FechaCita == fecha.Date &&
+                                      c.IdOdontologo == idOdontologo &&
+                                      c.Estado != "Cancelada")
+                          .ToList();
+            }
+        }
     }
+
 }

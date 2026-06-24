@@ -11,10 +11,8 @@ namespace OdontoSystem.Web.Controllers
     {
         private readonly OdontogramaService _service = new OdontogramaService();
         private readonly CitaService _citaService = new CitaService();
+
         [SoloOdontologoOAdmin]
-        /// <summary>
-        /// Atiende la cita y abre el odontograma para registrar piezas.
-        /// </summary>
         public ActionResult Atender(int idCita)
         {
             try
@@ -33,11 +31,33 @@ namespace OdontoSystem.Web.Controllers
         {
             var odontograma = _service.ObtenerPorId(id);
             if (odontograma == null) return HttpNotFound();
-
             ViewBag.EstadosPorPieza = _service.ObtenerEstadosPorPieza(id);
             ViewBag.EstadosValidos = OdontogramaService.EstadosValidos;
             ViewBag.SuperficiesValidas = OdontogramaService.SuperficiesValidas;
+            ViewBag.SoloLectura = false;
             return View(odontograma);
+        }
+
+        /// <summary>
+        /// Muestra el odontograma más reciente del paciente en modo solo lectura.
+        /// Accesible desde el perfil del paciente sin necesidad de atender una cita.
+        /// </summary>
+        public ActionResult VerPaciente(int idPaciente)
+        {
+            var odontograma = _service.ObtenerOdontogramaActualPorPaciente(idPaciente);
+
+            if (odontograma == null)
+            {
+                TempData["Error"] = "Este paciente aún no tiene odontograma registrado. " +
+                                    "El odontograma se crea al atender la primera cita.";
+                return RedirectToAction("Index", "Pacientes");
+            }
+
+            ViewBag.EstadosPorPieza = _service.ObtenerEstadosPorPieza(odontograma.IdOdontograma);
+            ViewBag.EstadosValidos = OdontogramaService.EstadosValidos;
+            ViewBag.SuperficiesValidas = OdontogramaService.SuperficiesValidas;
+            ViewBag.SoloLectura = true;
+            return View("Ver", odontograma);
         }
 
         public ActionResult PorPaciente(int idPaciente)

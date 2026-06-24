@@ -59,9 +59,12 @@
 
             <div class="col-md-4">
                 <label class="form-label">Teléfono</label>
-                <input name="Telefono" id="inputTelefono" class="form-control"
-                       maxlength="9" pattern="9[0-9]{8}"
-                       placeholder="987654321" />
+                <div class="input-group">
+                    <input name="Telefono" id="inputTelefono" class="form-control"
+                           maxlength="9" pattern="9[0-9]{8}"
+                           placeholder=" " />
+                    <button type="button" id="btnValidarTelefono" class="btn btn-outline-secondary">Validar</button>
+                </div>
                 <div id="feedbackTelefono" class="mt-1" style="font-size: 0.85em;"></div>
             </div>
             <div class="col-md-4">
@@ -274,32 +277,65 @@
     </script>
 
     <script>
-        // ─── Validación de teléfono ─────────────────────────────
-        (function () {
-            const inputTel = document.getElementById('inputTelefono');
-            const feedback = document.getElementById('feedbackTelefono');
+    // ─── Validación de teléfono ─────────────────────────────
+    (function () {
+        const inputTel = document.getElementById('inputTelefono');
+        const feedback = document.getElementById('feedbackTelefono');
+        const btnValidar = document.getElementById('btnValidarTelefono');
 
-            if (!inputTel) return;
+        if (!inputTel || !btnValidar) return;
 
-            inputTel.addEventListener('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
-                feedback.innerHTML = '';
+        inputTel.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+            feedback.innerHTML = '';
 
-                const tel = this.value;
-                if (tel.length === 0) return;
+            const tel = this.value;
+            if (tel.length === 0) return;
 
-                if (tel.length < 9) {
-                    feedback.innerHTML = '<span class="text-secondary">⏳ Faltan ' + (9 - tel.length) + ' dígitos</span>';
-                    return;
-                }
+            if (tel.length < 9) {
+                feedback.innerHTML = '<span class="text-secondary">⏳ Faltan ' + (9 - tel.length) + ' dígitos</span>';
+                return;
+            }
 
-                if (!/^9\d{8}$/.test(tel)) {
-                    feedback.innerHTML = '<span class="text-danger">❌ Debe empezar con 9 (ej: 987654321)</span>';
-                    return;
-                }
+            if (!/^9\d{8}$/.test(tel)) {
+                feedback.innerHTML = '<span class="text-danger">❌ Debe empezar con 9 (ej: 987654321)</span>';
+                return;
+            }
 
-                feedback.innerHTML = '<span class="text-success">✅ Teléfono válido</span>';
-            });
-        })();
+            feedback.innerHTML = '<span class="text-muted">Formato correcto. Clic en "Validar" para verificar con el operador.</span>';
+        });
+
+        btnValidar.addEventListener('click', function () {
+            const tel = inputTel.value;
+
+            if (!/^9\d{8}$/.test(tel)) {
+                feedback.innerHTML = '<span class="text-danger">❌ Debe empezar con 9 y tener 9 dígitos</span>';
+                return;
+            }
+
+            btnValidar.disabled = true;
+            btnValidar.textContent = 'Validando...';
+            feedback.innerHTML = '<span class="text-secondary">⏳ Verificando número...</span>';
+
+            fetch('@Url.Action("ValidarTelefono", "Pacientes")?telefono=' + tel)
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+
+                    if (data.valido) {
+                        feedback.innerHTML = '<span class="text-success">✅ Número válido' +
+                            (data.operadora ? ' — Operador: ' + data.operadora : '') + '</span>';
+                    } else {
+                        feedback.innerHTML = '<span class="text-warning">⚠️ ' + data.mensaje + '</span>';
+                    }
+                })
+                .catch(function () {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+                    feedback.innerHTML = '<span class="text-danger">❌ Error al validar. Intenta de nuevo.</span>';
+                });
+        });
+    })();
     </script>
 }

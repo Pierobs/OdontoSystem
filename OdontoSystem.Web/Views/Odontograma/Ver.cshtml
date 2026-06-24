@@ -63,7 +63,14 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Odontograma — @Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno</h2>
-        <a href="@Url.Action("Index", "Citas")" class="btn btn-secondary">← Volver a Citas</a>
+        @if (ViewBag.SoloLectura == true)
+        {
+            <a href="@Url.Action("Index", "Pacientes")" class="btn btn-secondary">← Volver a Pacientes</a>
+        }
+        else
+        {
+            <a href="@Url.Action("Index", "Citas")" class="btn btn-secondary">← Volver a Citas</a>
+        }
     </div>
 
     <div class="row mb-3">
@@ -71,8 +78,15 @@
             <div class="card">
                 <div class="card-body">
                     <p class="mb-1"><strong>Cita N°:</strong> @Model.IdCita</p>
-                    <p class="mb-1"><strong>Odontólogo:</strong> Dr. @Model.Cita.Odontologo.Nombres @Model.Cita.Odontologo.ApellidoPaterno</p>
-                    <p class="mb-1"><strong>Fecha:</strong> @Model.Cita.FechaCita.ToString("dd/MM/yyyy") @Model.Cita.HoraCita.ToString(@"hh\:mm")</p>
+                    @if (Model.Cita != null && Model.Cita.Odontologo != null)
+                    {
+                        <p class="mb-1"><strong>Odontólogo:</strong> Dr. @Model.Cita.Odontologo.Nombres @Model.Cita.Odontologo.ApellidoPaterno</p>
+                        <p class="mb-1"><strong>Fecha:</strong> @Model.Cita.FechaCita.ToString("dd/MM/yyyy") @Model.Cita.HoraCita.ToString(@"hh\:mm")</p>
+                    }
+                    else
+                    {
+                        <p class="mb-1 text-muted"><small>Información de cita no disponible</small></p>
+                    }
                     <p class="mb-0"><strong>Estado:</strong> <span class="badge bg-success">Atendida</span></p>
                 </div>
             </div>
@@ -101,8 +115,16 @@
 
     <div class="card">
         <div class="card-header bg-primary text-white text-center">
-            <strong>Click en cualquier superficie de la pieza dental para registrar su estado</strong>
-            <br /><small>Cada diente tiene 5 superficies: Vestibular, Oclusal, Lingual, Mesial y Distal</small>
+            @if (ViewBag.SoloLectura == true)
+            {
+                <strong>Odontograma actual del paciente</strong>
+                <br /><small>Consulte el estado de cada pieza dental. Para modificar, se realiza a través de una cita.</small>
+            }
+            else
+            {
+                <strong>Click en cualquier superficie de la pieza dental para registrar su estado</strong>
+                <br /><small>Cada diente tiene 5 superficies: Vestibular, Oclusal, Lingual, Mesial y Distal</small>
+            }
         </div>
         <div class="card-body text-center" style="background: #fafafa;">
             <div class="arcada" id="arcadaSuperior"></div>
@@ -110,6 +132,29 @@
             <div class="arcada" id="arcadaInferior"></div>
         </div>
     </div>
+
+    @* Acciones post-odontograma *@
+    @if (ViewBag.SoloLectura != true && (Session["Rol"]?.ToString() == "Odontologo" || Session["Rol"]?.ToString() == "Administrador"))
+    {
+        <div class="card mt-3">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">¿Listo con el diagnóstico?</h6>
+                    <small class="text-muted">Crea un plan de tratamiento basado en los hallazgos del odontograma</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="@Url.Action("Index", "Planes", new { idPaciente = Model.IdPaciente })"
+                       class="btn btn-outline-info">
+                        <i class="fa-solid fa-clipboard-list"></i> Ver planes del paciente
+                    </a>
+                    <a href="@Url.Action("Crear", "Planes", new { idPaciente = Model.IdPaciente })"
+                       class="btn btn-success">
+                        <i class="fa-solid fa-plus"></i> Crear plan de tratamiento
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
 
     @* Modal para editar pieza/superficie *@
     <div class="modal fade" id="modalPieza" tabindex="-1">
@@ -151,6 +196,7 @@
 
 @section Scripts {
     <script>
+        const soloLectura = @(ViewBag.SoloLectura == true ? "true" : "false");
         const idOdontograma = @Model.IdOdontograma;
         let piezaSeleccionada = null;
         let superficieSeleccionada = null;
@@ -263,6 +309,7 @@
 
         // Click en cualquier superficie (delegación)
         document.addEventListener('click', function (e) {
+            if (soloLectura) return;
             if (e.target.classList && e.target.classList.contains('superficie')) {
                 piezaSeleccionada = e.target.dataset.pieza;
                 superficieSeleccionada = e.target.dataset.superficie;

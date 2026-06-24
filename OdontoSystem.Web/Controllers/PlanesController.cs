@@ -37,6 +37,7 @@ namespace OdontoSystem.Web.Controllers
             return View(plan);
         }
 
+        [SoloOdontologoOAdmin]
         public ActionResult Crear(int? idPaciente = null)
         {
             ViewBag.Pacientes = _pacienteService.Listar().Where(p => p.Estado == "A").ToList();
@@ -47,6 +48,7 @@ namespace OdontoSystem.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [SoloOdontologoOAdmin]
         public ActionResult Crear(int idPaciente, int[] idTratamiento, int[] cantidad, decimal[] precioUnitario)
         {
             try
@@ -78,6 +80,7 @@ namespace OdontoSystem.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [SoloOdontologoOAdmin]
         public ActionResult AgregarDetalle(int idPlan, int idTratamiento, int cantidad, decimal precioUnitario)
         {
             try
@@ -100,6 +103,7 @@ namespace OdontoSystem.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [SoloOdontologoOAdmin]
         public ActionResult QuitarDetalle(int idPlanDetalle, int idPlan)
         {
             try
@@ -116,6 +120,7 @@ namespace OdontoSystem.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [SoloOdontologoOAdmin]
         public ActionResult Cancelar(int id)
         {
             try
@@ -132,6 +137,7 @@ namespace OdontoSystem.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [SoloOdontologoOAdmin]
         public ActionResult Cerrar(int id)
         {
             try

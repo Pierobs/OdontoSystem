@@ -138,5 +138,26 @@ namespace OdontoSystem.Web.Controllers
             bool existe = _service.ExisteDocumento(numero);
             return Json(new { existe }, JsonRequestBehavior.AllowGet);
         }
+
+        [HttpGet]
+        public async Task<JsonResult> ValidarTelefono(string telefono)
+        {
+            if (string.IsNullOrWhiteSpace(telefono) || telefono.Length != 9 || !telefono.StartsWith("9"))
+            {
+                return Json(new { valido = false, mensaje = "Debe ingresar 9 dígitos empezando en 9" },
+                             JsonRequestBehavior.AllowGet);
+            }
+
+            var servicio = new VeriphoneService();
+            var resultado = await servicio.ValidarAsync(telefono);
+
+            return Json(new
+            {
+                valido = resultado.Valido,
+                mensaje = resultado.Mensaje,
+                operadora = resultado.Operadora,
+                tipoLinea = resultado.TipoLinea
+            }, JsonRequestBehavior.AllowGet);
+        }
     }
 }

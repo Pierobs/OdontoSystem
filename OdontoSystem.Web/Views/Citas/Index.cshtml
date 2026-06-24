@@ -60,6 +60,13 @@
                                class="btn btn-sm btn-outline-info" title="Ver detalle">
                                 <i class="fa-solid fa-eye"></i>
                             </a>
+                            @if (c.Estado == "Pendiente" && (Session["Rol"].ToString() == "Odontologo" || Session["Rol"].ToString() == "Administrador"))
+                            {
+                                <a href="@Url.Action("Atender", "Odontograma", new { idCita = c.IdCita })"
+                                   class="btn btn-sm btn-outline-success" title="Atender / Abrir odontograma">
+                                    <i class="fa-solid fa-tooth"></i>
+                                </a>
+                            }
                             @if (c.Estado == "Pendiente")
                             {
                                 <button type="button" class="btn btn-sm btn-outline-warning"
@@ -117,9 +124,23 @@
                                                 </div>
                                                 <div class="modal-body">
                                                     <p class="text-muted">
-                                                        <small>Cita actual: @c.FechaCita.ToString("dd/MM/yyyy") @c.HoraCita.ToString(@"hh\:mm")</small>
+                                                        <small>Cita actual: @c.FechaCita.ToString("dd/MM/yyyy") @c.HoraCita.ToString(@"hh\:mm") — Dr. @c.Odontologo.ApellidoPaterno</small>
                                                     </p>
                                                     <div class="row g-3">
+                                                        <div class="col-12">
+                                                            <label class="form-label">Odontólogo *</label>
+                                                            <select name="nuevoIdOdontologo" class="form-select select-odontologo-reprog"
+                                                                    data-cita-id="@c.IdCita" required>
+                                                                @foreach (var o in (IEnumerable<OdontoSystem.Entities.Usuario>)ViewBag.Odontologos)
+                                                                {
+                                                                    <option value="@o.IdUsuario"
+                                                                            @(o.IdUsuario == c.IdOdontologo ? "selected" : "")>
+                                                                        Dr. @o.ApellidoPaterno @o.Nombres
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                            <small class="estado-odontologo-reprog text-muted" data-cita-id="@c.IdCita"></small>
+                                                        </div>
                                                         <div class="col-7">
                                                             <label class="form-label">Nueva Fecha *</label>
                                                             <input type="date" name="nuevaFecha"
@@ -169,37 +190,94 @@
 
 @section Scripts {
     <script>
-        // ─── Carga dinámica de slots en modales de reprogramación ───
+    // ─── Reprogramar: carga dinámica con disponibilidad por odontólogo ───
+    (function () {
+
+        // Al cambiar odontólogo → resetear fecha y hora, mostrar info de disponibilidad
+        document.querySelectorAll('.select-odontologo-reprog').forEach(function (selectOdontologo) {
+            selectOdontologo.addEventListener('change', function () {
+                const citaId      = this.dataset.citaId;
+                const idOdontologo = this.value;
+                const inputFecha  = document.querySelector('.input-fecha-reprog[data-cita-id="' + citaId + '"]');
+                const selectHora  = document.querySelector('.select-hora-reprog[data-cita-id="' + citaId + '"]');
+                const estadoSlots = document.querySelector('.estado-slots-reprog[data-cita-id="' + citaId + '"]');
+                const estadoOdont = document.querySelector('.estado-odontologo-reprog[data-cita-id="' + citaId + '"]');
+
+                // Resetear fecha y hora
+                inputFecha.value = '';
+                selectHora.innerHTML = '<option value="">-- Elija fecha --</option>';
+                selectHora.disabled = true;
+                estadoSlots.innerHTML = '';
+                estadoOdont.innerHTML = '<span class="text-secondary">⏳ Cargando disponibilidad...</span>';
+
+                if (!idOdontologo) return;
+
+                fetch('@Url.Action("FechasDisponibles", "Citas")?idOdontologo=' + idOdontologo)
+                    .then(function (res) { return res.json(); })
+                    .then(function (fechas) {
+                        if (fechas.length === 0) {
+                            estadoOdont.innerHTML = '<span class="text-warning">⚠️ Este odontólogo no tiene disponibilidad en los próximos 60 días</span>';
+                            inputFecha.disabled = true;
+                        } else {
+                            inputFecha.disabled = false;
+                            inputFecha.min = fechas[0];
+                            inputFecha.max = fechas[fechas.length - 1];
+                            estadoOdont.innerHTML = '<span class="text-success">✅ ' + fechas.length + ' día(s) disponible(s)</span>';
+                            // Guardar fechas disponibles en el input para validar después
+                            inputFecha.dataset.fechasDisponibles = JSON.stringify(fechas);
+                        }
+                    })
+                    .catch(function () {
+                        estadoOdont.innerHTML = '<span class="text-danger">Error al cargar disponibilidad</span>';
+                    });
+            });
+        });
+
+        // Al cambiar fecha → cargar slots del odontólogo seleccionado
         document.querySelectorAll('.input-fecha-reprog').forEach(function (inputFecha) {
             inputFecha.addEventListener('change', function () {
-                const citaId  = this.dataset.citaId;
-                const fecha   = this.value;
-                const select  = document.querySelector('.select-hora-reprog[data-cita-id="' + citaId + '"]');
-                const estado  = document.querySelector('.estado-slots-reprog[data-cita-id="' + citaId + '"]');
+                const citaId       = this.dataset.citaId;
+                const fecha        = this.value;
+                const selectHora   = document.querySelector('.select-hora-reprog[data-cita-id="' + citaId + '"]');
+                const estadoSlots  = document.querySelector('.estado-slots-reprog[data-cita-id="' + citaId + '"]');
+                const idOdontologo = document.querySelector('.select-odontologo-reprog[data-cita-id="' + citaId + '"]').value;
 
-                select.innerHTML = '<option value="">-- Cargando... --</option>';
-                select.disabled = true;
-                estado.innerHTML = '';
+                selectHora.innerHTML = '<option value="">-- Cargando... --</option>';
+                selectHora.disabled  = true;
+                estadoSlots.innerHTML = '';
 
                 if (!fecha) return;
 
-                const hoy = new Date();
-                hoy.setHours(0, 0, 0, 0);
+                // Validar fecha no pasada
+                const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
                 const fechaSel = new Date(fecha + 'T00:00:00');
-
                 if (fechaSel < hoy) {
-                    estado.innerHTML = '<span class="text-danger">❌ Fecha pasada no permitida</span>';
-                    select.innerHTML = '<option value="">-- Inválido --</option>';
+                    estadoSlots.innerHTML = '<span class="text-danger">❌ Fecha pasada no permitida</span>';
+                    selectHora.innerHTML  = '<option value="">-- Inválido --</option>';
                     return;
                 }
 
-                fetch('@Url.Action("SlotsDisponibles", "Citas")?fecha=' + fecha)
+                // Validar que el odontólogo tenga disponibilidad ese día
+                const fechasDisp = inputFecha.dataset.fechasDisponibles
+                    ? JSON.parse(inputFecha.dataset.fechasDisponibles)
+                    : [];
+                if (fechasDisp.length > 0 && !fechasDisp.includes(fecha)) {
+                    estadoSlots.innerHTML = '<span class="text-danger">❌ El odontólogo no tiene disponibilidad este día</span>';
+                    selectHora.innerHTML  = '<option value="">-- Sin disponibilidad --</option>';
+                    return;
+                }
+
+                // Cargar slots del odontólogo seleccionado
+                const url = '@Url.Action("SlotsDisponibles", "Citas")?fecha=' + fecha +
+                            (idOdontologo ? '&idOdontologo=' + idOdontologo : '');
+
+                fetch(url)
                     .then(function (res) { return res.json(); })
                     .then(function (slots) {
-                        select.innerHTML = '<option value="">-- Seleccione hora --</option>';
-                        const esHoy = fechaSel.getTime() === hoy.getTime();
-                        const ahora = new Date();
-                        let libres = 0;
+                        selectHora.innerHTML = '<option value="">-- Seleccione hora --</option>';
+                        const esHoy  = fechaSel.getTime() === hoy.getTime();
+                        const ahora  = new Date();
+                        let libres   = 0;
 
                         slots.forEach(function (s) {
                             const [h, m] = s.hora.split(':').map(Number);
@@ -214,27 +292,27 @@
                                 opt.textContent = s.hora + ' — Hora pasada';
                                 opt.disabled = true;
                             } else if (!s.disponible) {
-                                opt.textContent = s.hora + ' — Ocupado (' + s.ocupados + '/2)';
+                                opt.textContent = s.hora + ' — Ocupado';
                                 opt.disabled = true;
                             } else {
-                                opt.textContent = s.hora + ' — Libre (' + s.ocupados + '/2)';
+                                opt.textContent = s.hora + ' — Libre';
                                 libres++;
                             }
-                            select.appendChild(opt);
+                            selectHora.appendChild(opt);
                         });
 
-                        select.disabled = false;
-                        if (libres === 0) {
-                            estado.innerHTML = '<span class="text-danger">⚠️ Sin horarios disponibles</span>';
-                        } else {
-                            estado.innerHTML = '<span class="text-success">✅ ' + libres + ' horario(s) libre(s)</span>';
-                        }
+                        selectHora.disabled = false;
+                        estadoSlots.innerHTML = libres === 0
+                            ? '<span class="text-danger">⚠️ Sin horarios disponibles este día</span>'
+                            : '<span class="text-success">✅ ' + libres + ' horario(s) libre(s)</span>';
                     })
                     .catch(function () {
-                        estado.innerHTML = '<span class="text-danger">Error al cargar</span>';
-                        select.innerHTML = '<option value="">-- Error --</option>';
+                        estadoSlots.innerHTML = '<span class="text-danger">Error al cargar horarios</span>';
+                        selectHora.innerHTML  = '<option value="">-- Error --</option>';
                     });
             });
         });
+
+    })();
     </script>
 }

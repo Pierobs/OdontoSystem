@@ -45,11 +45,14 @@ namespace OdontoSystem.DAL.Context
         public DbSet<Odontograma> Odontogramas { get; set; }
         public DbSet<DienteEstado> DientesEstado { get; set; }
         public DbSet<HistorialEstadoCita> HistorialEstadosCita { get; set; }
+	public DbSet<DisponibilidadOdontologo> Disponibilidades { get; set; }
+	public DbSet<TelefonoOTP> TelefonoOTPs { get; set; }
         // Transaccionales
         public DbSet<PlanTratamiento> PlanesTratamiento { get; set; }
         public DbSet<PlanDetalle> PlanDetalles { get; set; }
         public DbSet<Evolucion> Evoluciones { get; set; }
         public DbSet<Pago> Pagos { get; set; }
+	public DbSet<HistorialDienteEstado> HistorialDientesEstado { get; set; }
 
 
         // ============================================================
@@ -78,6 +81,9 @@ namespace OdontoSystem.DAL.Context
             mb.Entity<PlanDetalle>().ToTable("PlanDetalle");
             mb.Entity<Evolucion>().ToTable("Evoluciones");
             mb.Entity<Pago>().ToTable("Pagos");
+	    mb.Entity<DisponibilidadOdontologo>().ToTable("DisponibilidadOdontologo");
+	    mb.Entity<TelefonoOTP>().ToTable("TelefonoOTP");
+	    mb.Entity<HistorialDienteEstado>().ToTable("HistorialDienteEstado");
 
             // --------------------------------------------------------
             // 2) Columnas COMPUTADAS en la BD (PERSISTED)
@@ -208,6 +214,32 @@ namespace OdontoSystem.DAL.Context
               .WithMany(u => u.PagosRegistrados)
               .HasForeignKey(pg => pg.IdUsuarioRegistro)
               .WillCascadeOnDelete(false);
+
+	// DisponibilidadOdontologo → Usuario (Odontólogo)
+	mb.Entity<DisponibilidadOdontologo>()
+  	.HasRequired(d => d.Odontologo)
+  	.WithMany()
+  	.HasForeignKey(d => d.IdOdontologo)
+  	.WillCascadeOnDelete(false);
+
+// HistorialDienteEstado → Paciente
+mb.Entity<HistorialDienteEstado>()
+  .HasRequired(h => h.Paciente)
+  .WithMany()
+  .HasForeignKey(h => h.IdPaciente)
+  .WillCascadeOnDelete(false);
+
+mb.Entity<HistorialDienteEstado>()
+  .HasOptional(h => h.Cita)
+  .WithMany()
+  .HasForeignKey(h => h.IdCita)
+  .WillCascadeOnDelete(false);
+
+mb.Entity<HistorialDienteEstado>()
+  .HasOptional(h => h.PlanDetalle)
+  .WithMany()
+  .HasForeignKey(h => h.IdPlanDetalle)
+  .WillCascadeOnDelete(false);
 
             base.OnModelCreating(mb);
         }

@@ -85,5 +85,42 @@ namespace OdontoSystem.Web.Controllers
         {
             return View();
         }
+
+        [HttpGet]
+        public ActionResult CambiarMiPassword()
+        {
+            int? idUsuario = Session["IdUsuario"] as int?;
+            if (idUsuario == null)
+                return RedirectToAction("Login");
+
+            var service = new UsuarioService();
+            ViewBag.EsObligatorio = service.RequiereCambioPassword(idUsuario.Value);
+            ViewBag.DiasParaExpiracion = service.DiasParaExpiracion(idUsuario.Value);
+
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult CambiarMiPassword(string PasswordActual, string NuevaPassword)
+        {
+            int? idUsuario = Session["IdUsuario"] as int?;
+            if (idUsuario == null)
+                return RedirectToAction("Login");
+
+            var service = new UsuarioService();
+
+            try
+            {
+                service.CambiarPasswordPropio(idUsuario.Value, PasswordActual, NuevaPassword);
+                TempData["Exito"] = "Contraseña actualizada correctamente";
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("CambiarMiPassword");
+            }
+        }
     }
 }

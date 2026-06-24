@@ -78,6 +78,11 @@
                                title="Ver planes de tratamiento">
                                 <i class="fa-solid fa-clipboard-list"></i> Planes
                             </a>
+                            <a href="@Url.Action("VerPaciente", "Odontograma", new { idPaciente = p.IdPaciente })"
+                               class="btn btn-sm btn-outline-secondary"
+                               title="Ver odontograma actual">
+                                <i class="fa-solid fa-tooth"></i> Odontograma
+                            </a>
 
                             <a href="@Url.Action("CambiarEstado", new { id = p.IdPaciente })"
                                class="btn btn-sm @(p.Estado == "A" ? "btn-outline-danger" : "btn-outline-success")"

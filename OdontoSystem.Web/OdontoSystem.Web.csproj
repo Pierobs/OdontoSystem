@@ -146,11 +146,18 @@
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\CatalogoController.cs" />
     <Compile Include="Controllers\CitasController.cs" />
+    <Compile Include="Controllers\DisponibilidadController.cs" />
+    <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\OdontogramaController.cs" />
     <Compile Include="Controllers\PacientesController.cs" />
+    <Compile Include="Controllers\PlanesController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Filters\AutenticadoAttribute.cs" />
+    <Compile Include="Filters\ManejadorErrorGlobalAttribute.cs" />
+    <Compile Include="Filters\RequiereCambioPasswordAttribute.cs" />
     <Compile Include="Filters\SoloAdminAttribute.cs" />
+    <Compile Include="Filters\SoloOdontologoOAdminAttribute.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -244,6 +251,13 @@
     <Content Include="Views\Usuarios\Editar.cshtml" />
     <Content Include="Views\Pacientes\Editar.cshtml" />
     <Content Include="Views\Citas\Detalle.cshtml" />
+    <Content Include="Views\Disponibilidad\Index.cshtml" />
+    <Content Include="Views\Disponibilidad\SeleccionarOdontologo.cshtml" />
+    <Content Include="Views\Odontograma\PorPaciente.cshtml" />
+    <Content Include="Views\Odontograma\Ver.cshtml" />
+    <Content Include="Views\Planes\Crear.cshtml" />
+    <Content Include="Views\Planes\Detalle.cshtml" />
+    <Content Include="Views\Planes\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

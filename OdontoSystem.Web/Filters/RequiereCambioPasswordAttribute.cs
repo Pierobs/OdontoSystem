@@ -8,7 +8,7 @@ namespace OdontoSystem.Web.Filters
     {
         public override void OnActionExecuting(ActionExecutingContext filterContext)
         {
-            // 1. Si no hay sesión iniciada, no hacemos nada (otros filtros se encargan del login)
+            // 1. Si no hay sesión iniciada, no hacemos nada
             var session = filterContext.HttpContext.Session;
             if (session == null || session["IdUsuario"] == null)
             {

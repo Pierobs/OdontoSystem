@@ -171,6 +171,19 @@
                                 <i class="fa-solid fa-list-check"></i> Catálogo
                             </a>
                         </li>
+                        @if (Session["Rol"]?.ToString() == "Odontologo" || Session["Rol"]?.ToString() == "Administrador")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="@Url.Action("Index","Planes")">
+                                    <i class="fa-solid fa-clipboard-list"></i> Planes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="@Url.Action("Index","Disponibilidad")">
+                                    <i class="fa-solid fa-calendar-week"></i> Mi Calendario
+                                </a>
+                            </li>
+                        }
                         @if (Session["Rol"]?.ToString() == "Administrador")
                         {
                             <li class="nav-item">

@@ -62,9 +62,6 @@ namespace OdontoSystem.BLL.Services
             }
         }
 
-        /// <summary>
-        /// Atiende la cita: la marca como Atendida y crea su odontograma vacío.
-        /// </summary>
         public int AtenderCitaYCrearOdontograma(int idCita)
         {
             using (var ctx = new OdontoContext())
@@ -73,45 +70,96 @@ namespace OdontoSystem.BLL.Services
                 if (cita == null)
                     throw new InvalidOperationException("Cita no encontrada");
 
-                if (cita.Estado == "Atendida")
-                {
-                    // Ya estaba atendida, devolver el odontograma existente
-                    var odExistente = ctx.Odontogramas.FirstOrDefault(o => o.IdCita == idCita);
-                    if (odExistente != null) return odExistente.IdOdontograma;
-                }
-
                 if (cita.Estado == "Cancelada")
                     throw new InvalidOperationException("No se puede atender una cita cancelada");
 
+                // Si la cita ya fue atendida, devolver el odontograma de esa cita
+                if (cita.Estado == "Atendida")
+                {
+                    var odExistente = ctx.Odontogramas
+                        .Where(o => o.IdCita == idCita)
+                        .OrderByDescending(o => o.FechaRegistro)
+                        .FirstOrDefault();
+                    if (odExistente != null) return odExistente.IdOdontograma;
+                }
+
                 if (cita.Estado != "Pendiente")
-                    throw new InvalidOperationException($"Estado inválido para atender: {cita.Estado}");
+                    throw new InvalidOperationException(
+                        $"Estado inválido para atender: {cita.Estado}");
+
+                // Buscar odontograma previo del paciente (de cualquier cita anterior)
+                var odontogramaPrevio = ctx.Odontogramas
+                    .Where(o => o.IdPaciente == cita.IdPaciente)
+                    .OrderByDescending(o => o.FechaRegistro)
+                    .FirstOrDefault();
 
                 // Marcar cita como atendida
                 cita.Estado = "Atendida";
-                cita.FechaAtencion = DateTime.Now;
                 cita.FechaModificacion = DateTime.Now;
 
-                // Crear odontograma vacío
-                var odontograma = new Odontograma
-                {
-                    IdCita = idCita,
-                    IdPaciente = cita.IdPaciente,
-                    FechaRegistro = DateTime.Now
-                };
-                ctx.Odontogramas.Add(odontograma);
+                int idOdontogramaFinal;
 
-                // Registrar historial
+                if (odontogramaPrevio != null)
+                {
+                    // PACIENTE CON HISTORIAL: crear nuevo registro vinculado a esta cita
+                    // pero copiar el estado actual de todas las piezas del odontograma previo
+                    var nuevoOdontograma = new Odontograma
+                    {
+                        IdCita = idCita,
+                        IdPaciente = cita.IdPaciente,
+                        FechaRegistro = DateTime.Now
+                    };
+                    ctx.Odontogramas.Add(nuevoOdontograma);
+                    ctx.SaveChanges();
+
+                    // Copiar el estado actual de cada pieza del odontograma previo
+                    var piezasPrevias = ctx.DientesEstado
+                        .Where(d => d.IdOdontograma == odontogramaPrevio.IdOdontograma)
+                        .ToList();
+
+                    foreach (var pieza in piezasPrevias)
+                    {
+                        ctx.DientesEstado.Add(new DienteEstado
+                        {
+                            IdOdontograma = nuevoOdontograma.IdOdontograma,
+                            NumeroPieza = pieza.NumeroPieza,
+                            Superficie = pieza.Superficie,
+                            Estado = pieza.Estado,
+                            Observacion = pieza.Observacion,
+                            FechaRegistro = DateTime.Now
+                        });
+                    }
+
+                    idOdontogramaFinal = nuevoOdontograma.IdOdontograma;
+                }
+                else
+                {
+                    // PRIMERA CITA: crear odontograma vacío
+                    var nuevoOdontograma = new Odontograma
+                    {
+                        IdCita = idCita,
+                        IdPaciente = cita.IdPaciente,
+                        FechaRegistro = DateTime.Now
+                    };
+                    ctx.Odontogramas.Add(nuevoOdontograma);
+                    ctx.SaveChanges();
+                    idOdontogramaFinal = nuevoOdontograma.IdOdontograma;
+                }
+
+                // Registrar historial de la cita
                 ctx.HistorialEstadosCita.Add(new HistorialEstadoCita
                 {
                     IdCita = idCita,
                     EstadoAnterior = "Pendiente",
                     EstadoNuevo = "Atendida",
-                    Motivo = "Cita atendida — odontograma creado",
+                    Motivo = odontogramaPrevio != null
+                        ? "Cita atendida — odontograma actualizado desde historial previo"
+                        : "Cita atendida — primer odontograma del paciente",
                     FechaCambio = DateTime.Now
                 });
 
                 ctx.SaveChanges();
-                return odontograma.IdOdontograma;
+                return idOdontogramaFinal;
             }
         }
 
@@ -123,13 +171,10 @@ namespace OdontoSystem.BLL.Services
         {
             if (!EstadosValidos.Contains(estado))
                 throw new InvalidOperationException($"Estado inválido: {estado}");
-
             if (string.IsNullOrWhiteSpace(superficie))
                 superficie = "Completo";
-
             if (!SuperficiesValidas.Contains(superficie))
                 throw new InvalidOperationException($"Superficie inválida: {superficie}");
-
             if (!PiezasFDI.Contains(numeroPieza))
                 throw new InvalidOperationException($"Número de pieza FDI inválido: {numeroPieza}");
 
@@ -139,7 +184,8 @@ namespace OdontoSystem.BLL.Services
                 if (odontograma == null)
                     throw new InvalidOperationException("Odontograma no encontrado");
 
-                // Buscar si ya existe registro para esta pieza+superficie
+                string estadoAnterior = null;
+
                 var existente = ctx.DientesEstado.FirstOrDefault(d =>
                     d.IdOdontograma == idOdontograma &&
                     d.NumeroPieza == numeroPieza &&
@@ -147,6 +193,7 @@ namespace OdontoSystem.BLL.Services
 
                 if (existente != null)
                 {
+                    estadoAnterior = existente.Estado; // guardar para el historial
                     existente.Estado = estado;
                     existente.Observacion = observacion;
                     existente.FechaRegistro = DateTime.Now;
@@ -161,6 +208,22 @@ namespace OdontoSystem.BLL.Services
                         Estado = estado,
                         Observacion = observacion,
                         FechaRegistro = DateTime.Now
+                    });
+                }
+
+                // Registrar en historial solo si el estado cambió
+                if (estadoAnterior != estado)
+                {
+                    ctx.HistorialDientesEstado.Add(new HistorialDienteEstado
+                    {
+                        IdPaciente = odontograma.IdPaciente,
+                        NumeroPieza = numeroPieza,
+                        Superficie = superficie,
+                        EstadoAnterior = estadoAnterior,
+                        EstadoNuevo = estado,
+                        FechaCambio = DateTime.Now,
+                        IdCita = odontograma.IdCita,
+                        Observacion = observacion
                     });
                 }
 
@@ -199,5 +262,27 @@ namespace OdontoSystem.BLL.Services
                 return dientes.ToDictionary(d => d.NumeroPieza, d => d.Estado);
             }
         }
+
+        /// <summary>
+        /// Devuelve el odontograma más reciente del paciente.
+        /// Usado para consultar el estado actual sin necesidad de atender una cita.
+        /// </summary>
+        public Odontograma ObtenerOdontogramaActualPorPaciente(int idPaciente)
+        {
+            using (var ctx = new OdontoContext())
+            {
+                ctx.Configuration.LazyLoadingEnabled = false;
+                ctx.Configuration.ProxyCreationEnabled = false;
+
+                return ctx.Odontogramas
+                          .Include(o => o.Paciente)
+                          .Include(o => o.Cita.Odontologo)
+                          .Include(o => o.DientesEstado)
+                          .Where(o => o.IdPaciente == idPaciente)
+                          .OrderByDescending(o => o.FechaRegistro)
+                          .FirstOrDefault();
+            }
+        }
+
     }
 }

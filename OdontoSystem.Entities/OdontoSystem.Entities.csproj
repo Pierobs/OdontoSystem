@@ -59,6 +59,8 @@
     <Compile Include="Models\Rol.cs" />
     <Compile Include="Models\Sexo.cs" />
     <Compile Include="Models\TipoDocumento.cs" />
+    <Compile Include="Models\DisponibilidadOdontologo.cs" />
+    <Compile Include="Models\TelefonoOTP.cs" />
     <Compile Include="Models\Usuario.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

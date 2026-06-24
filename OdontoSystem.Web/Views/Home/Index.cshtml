@@ -13,6 +13,23 @@
 </div>
 
 <div class="container">
+
+    @* Alerta de disponibilidad para odontólogos *@
+    @if (ViewBag.AlertaDisponibilidad == true)
+    {
+        <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-3 mt-3" role="alert">
+            <i class="fa-solid fa-calendar-xmark fa-2x"></i>
+            <div>
+                <strong>No tienes disponibilidad registrada esta semana.</strong>
+                Los pacientes no podrán agendar citas contigo hasta que registres tu horario.
+                <a href="@Url.Action("Index", "Disponibilidad")" class="alert-link ms-2">
+                    <i class="fa-solid fa-calendar-week"></i> Ir a Mi Calendario →
+                </a>
+            </div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-lg-3">
             <div class="card h-100" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
@@ -124,4 +141,5 @@
             </div>
         </div>
     </div>
+
 </div>
