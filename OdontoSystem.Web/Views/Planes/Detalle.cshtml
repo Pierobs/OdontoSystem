@@ -3,6 +3,8 @@
     ViewBag.Title = "Detalle del Plan";
     var evoluciones = ViewBag.Evoluciones as IEnumerable<OdontoSystem.BLL.Services.EvolucionService.EvolucionDto>;
     var citasAtendidas = ViewBag.CitasAtendidas as IEnumerable<OdontoSystem.Entities.Cita>;
+    var pagos = ViewBag.Pagos as IEnumerable<OdontoSystem.BLL.Services.PagoService.PagoDto>;
+    var metodosPago = ViewBag.MetodosPago as string[];
 }
 
 <div class="container mt-4">
@@ -186,6 +188,109 @@
                     <i class="fa-solid fa-ban"></i> Cancelar plan
                 </button>
             </form>
+        </div>
+    }
+
+    @* Registrar pago *@
+    @if (Model.Estado == "Activo" && Model.Saldo > 0)
+    {
+        <div class="card mb-3 border-success">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <strong><i class="fa-solid fa-money-bill-wave"></i> Registrar Pago</strong>
+                <small>Saldo pendiente: <strong>S/. @Model.Saldo.ToString("N2")</strong></small>
+            </div>
+            <div class="card-body">
+                <form action="@Url.Action("Registrar", "Pagos")" method="post"
+                      class="row g-3 align-items-end">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="idPlan" value="@Model.IdPlan" />
+                    <div class="col-md-3">
+                        <label class="form-label">Monto (S/.) *</label>
+                        <input type="number" name="monto" class="form-control"
+                               step="0.01" min="0.01"
+                               max="@Model.Saldo.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                               placeholder="0.00" required />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Método de pago *</label>
+                        <select name="metodoPago" class="form-select" required>
+                            <option value="">-- Seleccione --</option>
+                            @if (metodosPago != null)
+                            {
+                                foreach (var m in metodosPago)
+                                {
+                                    <option value="@m">@m</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-outline-success w-100"
+                                onclick="document.querySelector('input[name=monto]').value='@Model.Saldo.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)'">
+                            Pagar saldo completo
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fa-solid fa-check"></i> Registrar pago
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+
+    @* Historial de pagos *@
+    @if (pagos != null && pagos.Any())
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-success text-white">
+                <strong><i class="fa-solid fa-receipt"></i> Historial de pagos</strong>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Método</th>
+                            <th class="text-end">Monto</th>
+                            <th>Registrado por</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in pagos)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@p.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>
+                                    @{
+                                        string iconoPago;
+                                        switch (p.MetodoPago)
+                                        {
+                                            case "Efectivo": iconoPago = "fa-money-bill-wave"; break;
+                                            case "Tarjeta": iconoPago = "fa-credit-card"; break;
+                                            case "Transferencia": iconoPago = "fa-building-columns"; break;
+                                            case "Yape": iconoPago = "fa-mobile-screen"; break;
+                                            case "Plin": iconoPago = "fa-mobile-screen"; break;
+                                            default: iconoPago = "fa-circle-dollar-to-slot"; break;
+                                        }
+                                    }
+                                    <i class="fa-solid @iconoPago me-1"></i>@p.MetodoPago
+                                </td>
+                                <td class="text-end text-success fw-bold">S/. @p.Monto.ToString("N2")</td>
+                                <td>@p.NombresUsuario @p.ApellidoUsuario</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="2"><strong>Total abonado</strong></td>
+                            <td class="text-end"><strong>S/. @Model.MontoAbonado.ToString("N2")</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     }
 

@@ -36,8 +36,12 @@ namespace OdontoSystem.Web.Controllers
             if (plan == null) return HttpNotFound();
 
             var evolucionService = new EvolucionService();
+            var pagoService = new PagoService();
+
             ViewBag.Evoluciones = evolucionService.ListarPorPlan(id);
             ViewBag.CitasAtendidas = evolucionService.ListarCitasAtendidas(plan.IdPaciente);
+            ViewBag.Pagos = pagoService.ListarPorPlan(id);
+            ViewBag.MetodosPago = PagoService.MetodosPago;
 
             return View(plan);
         }
