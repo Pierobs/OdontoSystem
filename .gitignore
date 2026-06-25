@@ -367,3 +367,5 @@ App_Data/Logs/
 # Configuración local con secretos (Twilio, connection strings)
 Web.config.local
 appsettings.local.jsonOdontoSystem.Web/Web.config
+OdontoSystem.Web/Web.config
+OdontoSystem.Web/Web.config
