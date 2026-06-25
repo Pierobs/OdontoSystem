@@ -42,7 +42,7 @@
         </div>
 
         <button type="button" id="btnAgregarLinea" class="btn btn-outline-primary mt-2">
-            <i class="fa-solid fa-plus"></i> Agregar tratamiento
+            <i class="fa-solid fa-plus"></i> Agregar procedimiento
         </button>
 
         <div class="row mt-4">
@@ -64,97 +64,119 @@
 
 @section Scripts {
     <script>
-        const tratamientos = [
-            @foreach (var t in tratamientos)
-            {
-                <text>{ id: @t.IdTratamiento, nombre: '@Html.Raw(t.Nombre.Replace("'", "\\'"))', precio: @t.PrecioBase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) },</text>
-            }
-        ];
-
-        const container = document.getElementById('lineasContainer');
-        const btnAgregar = document.getElementById('btnAgregarLinea');
-        const totalSpan = document.getElementById('montoTotal');
-
-        function crearLinea() {
-            const div = document.createElement('div');
-            div.className = 'row g-2 mb-2 linea-tratamiento';
-
-            const opciones = tratamientos.map(t =>
-                '<option value="' + t.id + '" data-precio="' + t.precio + '">' + t.nombre + ' (S/. ' + t.precio + ')</option>'
-            ).join('');
-
-            div.innerHTML =
-                '<div class="col-md-5">' +
-                    '<select name="idTratamiento" class="form-select select-tratamiento" required>' +
-                        '<option value="">-- Tratamiento --</option>' + opciones +
-                    '</select>' +
-                '</div>' +
-                '<div class="col-md-2">' +
-                    '<input type="number" name="cantidad" class="form-control input-cantidad" placeholder="Cant." min="1" max="20" value="1" required />' +
-                '</div>' +
-                '<div class="col-md-2">' +
-                    '<input type="number" name="precioUnitario" class="form-control input-precio" placeholder="Precio" step="0.01" min="0" required />' +
-                '</div>' +
-                '<div class="col-md-2">' +
-                    '<input type="text" class="form-control subtotal-display" readonly placeholder="Subtotal" />' +
-                '</div>' +
-                '<div class="col-md-1">' +
-                    '<button type="button" class="btn btn-outline-danger btn-quitar"><i class="fa-solid fa-xmark"></i></button>' +
-                '</div>';
-
-            container.appendChild(div);
-
-            const selectTrat = div.querySelector('.select-tratamiento');
-            const inputCant = div.querySelector('.input-cantidad');
-            const inputPrecio = div.querySelector('.input-precio');
-            const subtotalDisp = div.querySelector('.subtotal-display');
-            const btnQuitar = div.querySelector('.btn-quitar');
-
-            selectTrat.addEventListener('change', function () {
-                const opt = this.options[this.selectedIndex];
-                inputPrecio.value = opt.dataset.precio || '';
-                actualizar();
-            });
-
-            inputCant.addEventListener('input', actualizar);
-            inputPrecio.addEventListener('input', actualizar);
-
-            btnQuitar.addEventListener('click', function () {
-                div.remove();
-                actualizarTotal();
-            });
-
-            function actualizar() {
-                const cant = parseFloat(inputCant.value) || 0;
-                const precio = parseFloat(inputPrecio.value) || 0;
-                subtotalDisp.value = 'S/. ' + (cant * precio).toFixed(2);
-                actualizarTotal();
-            }
+    const tratamientos = [
+        @foreach (var t in tratamientos)
+        {
+            <text>{ id: @t.IdTratamiento, nombre: '@Html.Raw(t.Nombre.Replace("'", "\\'"))', precio: @t.PrecioBase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) },</text>
         }
+    ];
 
-        function actualizarTotal() {
-            let total = 0;
-            document.querySelectorAll('.linea-tratamiento').forEach(linea => {
-                const cant = parseFloat(linea.querySelector('.input-cantidad').value) || 0;
-                const precio = parseFloat(linea.querySelector('.input-precio').value) || 0;
-                total += cant * precio;
-            });
-            totalSpan.textContent = 'S/. ' + total.toFixed(2);
-        }
+    const container  = document.getElementById('lineasContainer');
+    const btnAgregar = document.getElementById('btnAgregarLinea');
+    const totalSpan  = document.getElementById('montoTotal');
 
-        btnAgregar.addEventListener('click', crearLinea);
+    function crearLinea(tratamientoId, tratamientoNombre, precio) {
+        const div = document.createElement('div');
+        div.className = 'card mb-2 linea-tratamiento border-0 shadow-sm';
 
-        // Crear primera línea por defecto
-        crearLinea();
+        const opciones = tratamientos.map(t =>
+            '<option value="' + t.id + '" data-precio="' + t.precio + '"' +
+            (t.id == tratamientoId ? ' selected' : '') + '>' +
+            t.nombre + ' (S/. ' + t.precio + ')</option>'
+        ).join('');
 
-        // Validar antes de enviar
-        document.getElementById('formPlan').addEventListener('submit', function (e) {
-            const lineas = document.querySelectorAll('.linea-tratamiento');
-            if (lineas.length === 0) {
-                e.preventDefault();
-                alert('Debe agregar al menos un tratamiento al plan');
-                return;
-            }
+        div.innerHTML =
+            '<div class="card-body py-2">' +
+                '<div class="row g-2 align-items-end">' +
+                    '<div class="col-md-4">' +
+                        '<label class="form-label mb-1" style="font-size:0.82em;">Tratamiento *</label>' +
+                        '<select name="idTratamiento" class="form-select form-select-sm select-tratamiento" required>' +
+                            '<option value="">-- Seleccione --</option>' + opciones +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label mb-1" style="font-size:0.82em;"><i class="fa-solid fa-tooth"></i> Pieza FDI</label>' +
+                        '<input type="number" name="numeroPieza" class="form-control form-control-sm" min="11" max="85" placeholder="Ej: 47" />' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label mb-1" style="font-size:0.82em;">Superficie</label>' +
+                        '<select name="superficie" class="form-select form-select-sm">' +
+                            '<option value="">-- General --</option>' +
+                            '<option value="Vestibular">Vestibular</option>' +
+                            '<option value="Oclusal">Oclusal</option>' +
+                            '<option value="Lingual">Lingual</option>' +
+                            '<option value="Mesial">Mesial</option>' +
+                            '<option value="Distal">Distal</option>' +
+                            '<option value="Completo">Completo</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label mb-1" style="font-size:0.82em;">Precio *</label>' +
+                        '<input type="number" name="precioUnitario" class="form-control form-control-sm input-precio" step="0.01" min="0" required />' +
+                        '<input type="hidden" name="cantidad" value="1" />' +
+                        '<input type="hidden" name="estadoTratamiento" value="Pendiente" />' +
+                    '</div>' +
+                    '<div class="col-md-2 d-flex gap-1">' +
+                        '<button type="button" class="btn btn-sm btn-outline-secondary btn-duplicar" title="Duplicar para otra pieza">' +
+                            '<i class="fa-solid fa-copy"></i>' +
+                        '</button>' +
+                        '<button type="button" class="btn btn-sm btn-outline-danger btn-quitar">' +
+                            '<i class="fa-solid fa-xmark"></i>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        container.appendChild(div);
+
+        const selectTrat  = div.querySelector('.select-tratamiento');
+        const inputPrecio = div.querySelector('.input-precio');
+        const btnQuitar   = div.querySelector('.btn-quitar');
+        const btnDuplicar = div.querySelector('.btn-duplicar');
+
+        if (precio) inputPrecio.value = precio;
+
+        selectTrat.addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            inputPrecio.value = opt.dataset.precio || '';
+            actualizarTotal();
         });
+
+        inputPrecio.addEventListener('input', actualizarTotal);
+
+        btnQuitar.addEventListener('click', function () {
+            div.remove();
+            actualizarTotal();
+        });
+
+        btnDuplicar.addEventListener('click', function () {
+            const tId    = selectTrat.value;
+            const tPrecio = inputPrecio.value;
+            crearLinea(tId, null, tPrecio);
+        });
+    }
+
+    function actualizarTotal() {
+        let total = 0;
+        document.querySelectorAll('.linea-tratamiento').forEach(function (linea) {
+            const precio = parseFloat(linea.querySelector('.input-precio')?.value) || 0;
+            total += precio;
+        });
+        totalSpan.textContent = 'S/. ' + total.toFixed(2);
+    }
+
+    btnAgregar.addEventListener('click', function () { crearLinea(); });
+
+    // Primera línea por defecto
+    crearLinea();
+
+    // Validar antes de enviar
+    document.getElementById('formPlan').addEventListener('submit', function (e) {
+        const lineas = document.querySelectorAll('.linea-tratamiento');
+        if (lineas.length === 0) {
+            e.preventDefault();
+            alert('Debe agregar al menos un procedimiento al plan');
+        }
+    });
     </script>
 }

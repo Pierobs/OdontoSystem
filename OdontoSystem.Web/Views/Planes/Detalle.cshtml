@@ -1,6 +1,8 @@
 ﻿@model OdontoSystem.Entities.PlanTratamiento
 @{
     ViewBag.Title = "Detalle del Plan";
+    var evoluciones = ViewBag.Evoluciones as IEnumerable<OdontoSystem.BLL.Services.EvolucionService.EvolucionDto>;
+    var citasAtendidas = ViewBag.CitasAtendidas as IEnumerable<OdontoSystem.Entities.Cita>;
 }
 
 <div class="container mt-4">
@@ -40,7 +42,7 @@
                         {
                             case "Activo":<span class="badge bg-warning text-dark">Activo</span> break;
                             case "Pagado": <span class="badge bg-success">Pagado</span> break;
-                            case "Cancelado": <span class="badge bg-danger">Cancelado</span>break;
+                            case "Cancelado":<span class="badge bg-danger">Cancelado</span>break;
                         }
                     </p>
                 </div>
@@ -54,9 +56,9 @@
                 </div>
                 <div class="card-body">
                     <table class="table table-sm mb-0">
-                        <tr><td>Monto Total:</td><td class="text-end"><strong>S/. @Model.MontoTotal.ToString("N2")</strong></td></tr>
-                        <tr><td>Abonado:</td><td class="text-end text-success">S/. @Model.MontoAbonado.ToString("N2")</td></tr>
-                        <tr><td>Saldo Pendiente:</td><td class="text-end text-danger"><strong>S/. @Model.Saldo.ToString("N2")</strong></td></tr>
+                        <tr><td>Monto Total:</td>    <td class="text-end"><strong>S/. @Model.MontoTotal.ToString("N2")</strong></td></tr>
+                        <tr><td>Abonado:</td>         <td class="text-end text-success">S/. @Model.MontoAbonado.ToString("N2")</td></tr>
+                        <tr><td>Saldo Pendiente:</td> <td class="text-end text-danger"><strong>S/. @Model.Saldo.ToString("N2")</strong></td></tr>
                     </table>
                 </div>
             </div>
@@ -68,7 +70,8 @@
             <strong>Tratamientos incluidos</strong>
             @if (Model.Estado == "Activo")
             {
-                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+                <button type="button" class="btn btn-sm btn-light"
+                        data-bs-toggle="modal" data-bs-target="#modalAgregar">
                     <i class="fa-solid fa-plus"></i> Agregar tratamiento
                 </button>
             }
@@ -79,28 +82,68 @@
                     <tr>
                         <th>N°</th>
                         <th>Tratamiento</th>
-                        <th class="text-center">Cantidad</th>
-                        <th class="text-end">Precio Unit.</th>
+                        <th class="text-center">Pieza</th>
+                        <th class="text-center">Superficie</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">Precio</th>
                         <th class="text-end">Subtotal</th>
                         @if (Model.Estado == "Activo")
                         {
+                            <th class="text-center">Sesiones</th>
                             <th></th>
                         }
                     </tr>
                 </thead>
                 <tbody>
-                    @{ int contador = 0; }
+                    @{
+                        int contador = 0;
+                        string badgeColor = "bg-secondary";
+                        int sesiones = 0;
+                    }
                     @foreach (var d in Model.Detalles)
                     {
                         contador++;
+                        switch (d.EstadoTratamiento)
+                        {
+                            case "Completado": badgeColor = "bg-success"; break;
+                            case "EnProceso": badgeColor = "bg-warning text-dark"; break;
+                            case "Cancelado": badgeColor = "bg-danger"; break;
+                            default: badgeColor = "bg-secondary"; break;
+                        }
+                        sesiones = evoluciones != null
+                            ? evoluciones.Count(e => e.IdPlanDetalle == d.IdPlanDetalle)
+                            : 0;
                         <tr>
                             <td>@contador</td>
                             <td>@d.Tratamiento.Nombre</td>
-                            <td class="text-center">@d.Cantidad</td>
-                            <td class="text-end">S/. @d.PrecioUnitario.ToString("N2")</td>
+                            <td class="text-center">
+                                @(d.NumeroPieza.HasValue ? d.NumeroPieza.ToString() : "—")
+                            </td>
+                            <td class="text-center">
+                                @(string.IsNullOrEmpty(d.Superficie) ? "—" : d.Superficie)
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @badgeColor">
+                                    @(d.EstadoTratamiento ?? "Pendiente")
+                                </span>
+                            </td>
+                            <td class="text-center">S/. @d.PrecioUnitario.ToString("N2")</td>
                             <td class="text-end">S/. @d.Subtotal.ToString("N2")</td>
                             @if (Model.Estado == "Activo")
                             {
+                                <td class="text-center">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalEvolucion-@d.IdPlanDetalle"
+                                            title="Registrar sesión de trabajo">
+                                        <i class="fa-solid fa-notes-medical"></i>
+                                        @if (sesiones > 0)
+                                        {
+                                            <span class="badge bg-primary ms-1">@sesiones</span>
+                                        }
+                                    </button>
+                                </td>
                                 <td>
                                     <form action="@Url.Action("QuitarDetalle", "Planes")" method="post"
                                           onsubmit="return confirm('¿Quitar este tratamiento del plan?');"
@@ -135,7 +178,6 @@
                     </button>
                 </form>
             }
-
             <form action="@Url.Action("Cancelar", "Planes")" method="post"
                   onsubmit="return confirm('¿Cancelar este plan? Esta acción no se puede deshacer.');">
                 @Html.AntiForgeryToken()
@@ -145,6 +187,130 @@
                 </button>
             </form>
         </div>
+    }
+
+    @* Historial de sesiones *@
+    @if (evoluciones != null && evoluciones.Any())
+    {
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">
+                <strong><i class="fa-solid fa-clock-rotate-left"></i> Historial de sesiones</strong>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tratamiento</th>
+                            <th class="text-center">Pieza</th>
+                            <th class="text-center">Superficie</th>
+                            <th>Odontólogo</th>
+                            <th>Descripción</th>
+                            <th class="text-center">Cita</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ev in evoluciones)
+                        {
+                            <tr>
+                                <td class="text-nowrap">@ev.FechaEvolucion.ToString("dd/MM/yyyy")</td>
+                                <td>@ev.NombreTratamiento</td>
+                                <td class="text-center">@(ev.NumeroPieza.HasValue ? ev.NumeroPieza.ToString() : "—")</td>
+                                <td class="text-center">@(string.IsNullOrEmpty(ev.Superficie) ? "—" : ev.Superficie)</td>
+                                <td>Dr. @ev.ApellidoOdontologo</td>
+                                <td>@ev.Descripcion</td>
+                                <td class="text-center">
+                                    @if (ev.IdCita.HasValue)
+                                    {
+                                        <span class="badge bg-info">Cita #@ev.IdCita</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @* Modales de evolución por tratamiento *@
+    @if (Model.Estado == "Activo")
+    {
+        foreach (var d in Model.Detalles)
+        {
+            <div class="modal fade" id="modalEvolucion-@d.IdPlanDetalle" tabindex="-1">
+                <div class="modal-dialog">
+                    <form action="@Url.Action("Registrar", "Evoluciones")" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="idPlan" value="@Model.IdPlan" />
+                        <input type="hidden" name="idTratamiento" value="@d.IdTratamiento" />
+                        <input type="hidden" name="idPlanDetalle" value="@d.IdPlanDetalle" />
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">
+                                    <i class="fa-solid fa-notes-medical"></i>
+                                    Registrar sesión — @d.Tratamiento.Nombre
+                                    @if (d.NumeroPieza.HasValue)
+                                    {
+                                        <small class="ms-1 opacity-75">| Pieza @d.NumeroPieza @d.Superficie</small>
+                                    }
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Fecha de la sesión *</label>
+                                    <input type="date" name="fechaEvolucion" class="form-control"
+                                           value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                           max="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Descripción de lo realizado *</label>
+                                    <textarea name="descripcion" class="form-control" rows="3"
+                                              maxlength="1000" required
+                                              placeholder="Ej: Se realizó preparación cavitaria y obturación con resina..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Vincular a una cita (opcional)</label>
+                                    <select name="idCita" class="form-select">
+                                        <option value="">-- Sin cita asociada --</option>
+                                        @if (citasAtendidas != null)
+                                        {
+                                            foreach (var cita in citasAtendidas)
+                                            {
+                                                <option value="@cita.IdCita">
+                                                    Cita #@cita.IdCita — @cita.FechaCita.ToString("dd/MM/yyyy") @cita.HoraCita.ToString(@"hh\:mm")
+                                                </option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Actualizar estado del tratamiento</label>
+                                    <select name="nuevoEstadoTratamiento" class="form-select">
+                                        <option value="Pendiente" @(d.EstadoTratamiento == "Pendiente" || d.EstadoTratamiento == null ? "selected" : "")>Pendiente (sin cambio)</option>
+                                        <option value="EnProceso" @(d.EstadoTratamiento == "EnProceso" ? "selected" : "")>En proceso</option>
+                                        <option value="Completado" @(d.EstadoTratamiento == "Completado" ? "selected" : "")>Completado ✓</option>
+                                        <option value="Cancelado" @(d.EstadoTratamiento == "Cancelado" ? "selected" : "")>Cancelado</option>
+                                    </select>
+                                    <small class="text-muted">El odontólogo decide si el tratamiento avanzó de estado en esta sesión.</small>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-save"></i> Guardar sesión
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
     }
 
     @* Modal Agregar tratamiento *@
@@ -165,14 +331,36 @@
                                 <option value="">-- Seleccione --</option>
                             </select>
                         </div>
-                        <div class="row">
-                            <div class="col-6">
-                                <label class="form-label">Cantidad *</label>
-                                <input type="number" name="cantidad" class="form-control" min="1" max="20" value="1" required />
+                        <input type="hidden" name="cantidad" value="1" />
+                        <input type="hidden" name="estadoTratamiento" value="Pendiente" />
+                        <div class="mb-3">
+                            <label class="form-label">Precio Unit. *</label>
+                            <input type="number" name="precioUnitario" id="modalInputPrecio"
+                                   class="form-control" step="0.01" min="0" required />
+                        </div>
+                        <hr class="my-2" />
+                        <p class="text-muted mb-2" style="font-size:0.85em;">
+                            <i class="fa-solid fa-tooth"></i>
+                            Opcional: vincula este procedimiento a una pieza dental específica
+                        </p>
+                        <div class="row g-2">
+                            <div class="col-5">
+                                <label class="form-label">Pieza FDI</label>
+                                <input type="number" name="numeroPieza" class="form-control"
+                                       min="11" max="85" placeholder="Ej: 47 (opcional)" />
+                                <small class="text-muted">11–28 superior / 31–48 inferior</small>
                             </div>
-                            <div class="col-6">
-                                <label class="form-label">Precio Unit. *</label>
-                                <input type="number" name="precioUnitario" id="modalInputPrecio" class="form-control" step="0.01" min="0" required />
+                            <div class="col-7">
+                                <label class="form-label">Superficie</label>
+                                <select name="superficie" class="form-select">
+                                    <option value="">-- General (toda la pieza) --</option>
+                                    <option value="Vestibular">Vestibular</option>
+                                    <option value="Oclusal">Oclusal</option>
+                                    <option value="Lingual">Lingual</option>
+                                    <option value="Mesial">Mesial</option>
+                                    <option value="Distal">Distal</option>
+                                    <option value="Completo">Completo</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -188,33 +376,33 @@
 
 @section Scripts {
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const select = document.getElementById('modalSelectTrat');
-            const inputPrecio = document.getElementById('modalInputPrecio');
-            if (!select) return;
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.getElementById('modalSelectTrat');
+        const inputPrecio = document.getElementById('modalInputPrecio');
+        if (!select) return;
 
-            const tratamientos = [
-                @{
-                    var cat = new OdontoSystem.BLL.Services.CatalogoTratamientoService().Listar(soloActivos: true);
-                    foreach (var t in cat)
-                    {
-                        <text>{ id: @t.IdTratamiento, nombre: '@Html.Raw(t.Nombre.Replace("'", "\\'"))', precio: @t.PrecioBase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) },</text>
-                    }
+        const tratamientos = [
+            @{
+                var cat = new OdontoSystem.BLL.Services.CatalogoTratamientoService().Listar(soloActivos: true);
+                foreach (var t in cat)
+                {
+                    <text>{ id: @t.IdTratamiento, nombre: '@Html.Raw(t.Nombre.Replace("'", "\\'"))', precio: @t.PrecioBase.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) },</text>
                 }
-            ];
+            }
+        ];
 
-            tratamientos.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t.id;
-                opt.textContent = t.nombre + ' (S/. ' + t.precio + ')';
-                opt.dataset.precio = t.precio;
-                select.appendChild(opt);
-            });
-
-            select.addEventListener('change', function () {
-                const opt = this.options[this.selectedIndex];
-                inputPrecio.value = opt.dataset.precio || '';
-            });
+        tratamientos.forEach(function (t) {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = t.nombre + ' (S/. ' + t.precio + ')';
+            opt.dataset.precio = t.precio;
+            select.appendChild(opt);
         });
+
+        select.addEventListener('change', function () {
+            const opt = this.options[this.selectedIndex];
+            inputPrecio.value = opt.dataset.precio || '';
+        });
+    });
     </script>
 }

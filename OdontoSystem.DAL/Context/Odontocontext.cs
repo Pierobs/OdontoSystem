@@ -202,6 +202,18 @@ namespace OdontoSystem.DAL.Context
               .HasForeignKey(e => e.IdTratamiento)
               .WillCascadeOnDelete(false);
 
+            mb.Entity<Evolucion>()
+                .HasOptional(e => e.Cita)
+                .WithMany()
+                .HasForeignKey(e => e.IdCita)
+                .WillCascadeOnDelete(false);
+
+            mb.Entity<Evolucion>()
+                .HasOptional(e => e.PlanDetalle)
+                .WithMany()
+                .HasForeignKey(e => e.IdPlanDetalle)
+                .WillCascadeOnDelete(false);
+
             // Pago → PlanTratamiento / Usuario
             mb.Entity<Pago>()
               .HasRequired(pg => pg.Plan)

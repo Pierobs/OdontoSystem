@@ -129,6 +129,7 @@
     <Compile Include="Services\AuthService.cs" />
     <Compile Include="Services\DashboardService.cs" />
     <Compile Include="Services\EmailValidator.cs" />
+    <Compile Include="Services\EvolucionService.cs" />
     <Compile Include="Services\HorarioAtencion.cs" />
     <Compile Include="Services\PacienteService.cs" />
     <Compile Include="Services\ReniecService.cs" />
@@ -138,6 +139,7 @@
     <Compile Include="Services\DisponibilidadService.cs" />
     <Compile Include="Services\OdontogramaService.cs" />
     <Compile Include="Services\PlanTratamientoService.cs" />
+
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OdontoSystem.DAL\OdontoSystem.DAL.csproj">

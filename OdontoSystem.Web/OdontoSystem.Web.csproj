@@ -148,6 +148,7 @@
     <Compile Include="Controllers\CitasController.cs" />
     <Compile Include="Controllers\DisponibilidadController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
+    <Compile Include="Controllers\EvolucionesController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\OdontogramaController.cs" />
     <Compile Include="Controllers\PacientesController.cs" />

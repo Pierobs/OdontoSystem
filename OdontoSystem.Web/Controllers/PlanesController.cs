@@ -34,6 +34,11 @@ namespace OdontoSystem.Web.Controllers
         {
             var plan = _service.ObtenerPorId(id);
             if (plan == null) return HttpNotFound();
+
+            var evolucionService = new EvolucionService();
+            ViewBag.Evoluciones = evolucionService.ListarPorPlan(id);
+            ViewBag.CitasAtendidas = evolucionService.ListarCitasAtendidas(plan.IdPaciente);
+
             return View(plan);
         }
 
@@ -49,7 +54,9 @@ namespace OdontoSystem.Web.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [SoloOdontologoOAdmin]
-        public ActionResult Crear(int idPaciente, int[] idTratamiento, int[] cantidad, decimal[] precioUnitario)
+        public ActionResult Crear(int idPaciente, int[] idTratamiento, int[] cantidad,
+                                   decimal[] precioUnitario, byte?[] numeroPieza = null,
+                                   string[] superficie = null, string[] estadoTratamiento = null)
         {
             try
             {
@@ -63,7 +70,14 @@ namespace OdontoSystem.Web.Controllers
                     {
                         IdTratamiento = idTratamiento[i],
                         Cantidad = (byte)cantidad[i],
-                        PrecioUnitario = precioUnitario[i]
+                        PrecioUnitario = precioUnitario[i],
+                        NumeroPieza = numeroPieza != null && i < numeroPieza.Length ? numeroPieza[i] : null,
+                        Superficie = superficie != null && i < superficie.Length
+                                            ? (string.IsNullOrWhiteSpace(superficie[i]) ? null : superficie[i])
+                                            : null,
+                        EstadoTratamiento = estadoTratamiento != null && i < estadoTratamiento.Length
+                                            ? estadoTratamiento[i]
+                                            : "Pendiente"
                     });
                 }
 
@@ -74,14 +88,16 @@ namespace OdontoSystem.Web.Controllers
             catch (Exception ex)
             {
                 TempData["Error"] = ex.Message;
-                return RedirectToAction("Crear", new { idPaciente = idPaciente });
+                return RedirectToAction("Crear", new { idPaciente });
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         [SoloOdontologoOAdmin]
-        public ActionResult AgregarDetalle(int idPlan, int idTratamiento, int cantidad, decimal precioUnitario)
+        public ActionResult AgregarDetalle(int idPlan, int idTratamiento, int cantidad,
+                                            decimal precioUnitario, byte? numeroPieza = null,
+                                            string superficie = null, string estadoTratamiento = "Pendiente")
         {
             try
             {
@@ -89,7 +105,10 @@ namespace OdontoSystem.Web.Controllers
                 {
                     IdTratamiento = idTratamiento,
                     Cantidad = (byte)cantidad,
-                    PrecioUnitario = precioUnitario
+                    PrecioUnitario = precioUnitario,
+                    NumeroPieza = numeroPieza,
+                    Superficie = string.IsNullOrWhiteSpace(superficie) ? null : superficie,
+                    EstadoTratamiento = estadoTratamiento ?? "Pendiente"
                 };
                 _service.AgregarDetalle(idPlan, detalle);
                 TempData["Exito"] = "Tratamiento agregado al plan";
