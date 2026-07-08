@@ -18,7 +18,7 @@ namespace OdontoSystem.Web.Controllers
             try
             {
                 int idOdontograma = _service.AtenderCitaYCrearOdontograma(idCita);
-                return RedirectToAction("Ver", new { id = idOdontograma });
+                return RedirectToAction("Ver", new { id = idOdontograma, idCita = idCita });
             }
             catch (Exception ex)
             {
@@ -27,7 +27,7 @@ namespace OdontoSystem.Web.Controllers
             }
         }
 
-        public ActionResult Ver(int id)
+        public ActionResult Ver(int id, int? idCita = null)
         {
             var odontograma = _service.ObtenerPorId(id);
             if (odontograma == null) return HttpNotFound();
@@ -35,6 +35,7 @@ namespace OdontoSystem.Web.Controllers
             ViewBag.EstadosValidos = OdontogramaService.EstadosValidos;
             ViewBag.SuperficiesValidas = OdontogramaService.SuperficiesValidas;
             ViewBag.SoloLectura = false;
+            ViewBag.IdCita = idCita;
             return View(odontograma);
         }
 
@@ -66,6 +67,13 @@ namespace OdontoSystem.Web.Controllers
             ViewBag.IdPaciente = idPaciente;
             return View(odontogramas);
         }
+
+        // HU-14: ExportarPDF y VistaImprimible viven en OdontogramaPdfController
+        // (Controllers/OdontogramaPdfController.cs), no aquí. Necesitan sesión en
+        // modo solo-lectura para evitar un deadlock cuando Rotativa hace la petición
+        // interna con la misma cookie de sesión; este controlador usa TempData
+        // (respaldado por Session) en modo lectura-escritura y no puede compartir
+        // ese modo con esas dos acciones.
 
         [HttpPost]
         [ValidateAntiForgeryToken]

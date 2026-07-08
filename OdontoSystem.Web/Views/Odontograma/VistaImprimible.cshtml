@@ -1,0 +1,189 @@
+@model OdontoSystem.Entities.Odontograma
+@using System.Linq
+@{
+    // HU-14: vista server-side, SIN layout y SIN JavaScript.
+    // Rotativa/wkhtmltopdf renderiza este HTML tal cual y lo convierte a PDF;
+    // no hay fetch ni sesión de navegador disponible en ese proceso.
+    Layout = null;
+
+    var coloresEstado = new System.Collections.Generic.Dictionary<string, string>
+    {
+        { "Sano", "#FFFFFF" }, { "Caries", "#FF4444" }, { "Curacion", "#4488FF" },
+        { "Extraccion", "#222222" }, { "Corona", "#FFCC00" }, { "Implante", "#9966CC" },
+        { "Ausente", "#888888" }, { "Endodoncia", "#FF8800" }, { "Fractura", "#E91E63" },
+        { "Perno", "#795548" }
+    };
+
+    // RegistrarPieza hace upsert por (pieza, superficie), así que no hay
+    // duplicados que desambiguar aquí — a diferencia de ObtenerEstadosPorPieza.
+    var estados = (Model.DientesEstado ?? new System.Collections.Generic.List<OdontoSystem.Entities.DienteEstado>())
+        .ToDictionary(d => d.NumeroPieza + "|" + d.Superficie, d => d.Estado);
+
+    bool sinRegistros = !(Model.DientesEstado != null && Model.DientesEstado.Any());
+
+    Func<byte, string, string> colorDe = (pieza, superficie) =>
+    {
+        string estado;
+        string key = pieza + "|" + superficie;
+        return estados.TryGetValue(key, out estado) && coloresEstado.ContainsKey(estado)
+            ? coloresEstado[estado] : "#FFFFFF";
+    };
+
+    // La superficie Oclusal cae a "Completo" si no hay registro específico,
+    // igual que en Ver.cshtml (generarDienteSVG).
+    Func<byte, string> colorOclusal = (pieza) =>
+    {
+        string estado;
+        if (estados.TryGetValue(pieza + "|Oclusal", out estado) && coloresEstado.ContainsKey(estado))
+            return coloresEstado[estado];
+        if (estados.TryGetValue(pieza + "|Completo", out estado) && coloresEstado.ContainsKey(estado))
+            return coloresEstado[estado];
+        return "#FFFFFF";
+    };
+
+    Func<byte, string> dienteSvg = (numero) =>
+    {
+        int size = 50, t = 12, m = size - 2 * t;
+        string colorV = colorDe(numero, "Vestibular");
+        string colorL = colorDe(numero, "Lingual");
+        string colorM = colorDe(numero, "Mesial");
+        string colorD = colorDe(numero, "Distal");
+        string colorO = colorOclusal(numero);
+
+        return "<svg width=\"" + size + "\" height=\"" + size + "\" viewBox=\"0 0 " + size + " " + size + "\" xmlns=\"http://www.w3.org/2000/svg\">"
+            + "<polygon points=\"0,0 " + size + ",0 " + (size - t) + "," + t + " " + t + "," + t + "\" fill=\"" + colorV + "\" stroke=\"#333\" stroke-width=\"1\"/>"
+            + "<polygon points=\"" + t + "," + (size - t) + " " + (size - t) + "," + (size - t) + " " + size + "," + size + " 0," + size + "\" fill=\"" + colorL + "\" stroke=\"#333\" stroke-width=\"1\"/>"
+            + "<polygon points=\"0,0 " + t + "," + t + " " + t + "," + (size - t) + " 0," + size + "\" fill=\"" + colorM + "\" stroke=\"#333\" stroke-width=\"1\"/>"
+            + "<polygon points=\"" + size + ",0 " + size + "," + size + " " + (size - t) + "," + (size - t) + " " + (size - t) + "," + t + "\" fill=\"" + colorD + "\" stroke=\"#333\" stroke-width=\"1\"/>"
+            + "<rect x=\"" + t + "\" y=\"" + t + "\" width=\"" + m + "\" height=\"" + m + "\" fill=\"" + colorO + "\" stroke=\"#333\" stroke-width=\"1\"/>"
+            + "</svg>";
+    };
+
+    byte[] piezasSupDer = { 18, 17, 16, 15, 14, 13, 12, 11 };
+    byte[] piezasSupIzq = { 21, 22, 23, 24, 25, 26, 27, 28 };
+    byte[] piezasInfDer = { 48, 47, 46, 45, 44, 43, 42, 41 };
+    byte[] piezasInfIzq = { 31, 32, 33, 34, 35, 36, 37, 38 };
+
+    string tipoDoc = Model.Paciente != null && Model.Paciente.TipoDocumento != null
+        ? Model.Paciente.TipoDocumento.Abreviatura : "Doc.";
+
+    // wkhtmltopdf ignora tanto el <meta charset> como el header Content-Type y el
+    // switch --encoding: siempre termina leyendo la respuesta como Windows-1252,
+    // así que tildes/eñes en UTF-8 salen como "Ã³". La forma que sí funciona sin
+    // depender de que wkhtmltopdf detecte nada es no mandarle bytes no-ASCII:
+    // convertimos cada caracter especial a su entidad HTML numérica (texto ASCII
+    // puro, se interpreta igual sin importar la codificación). Se aplica tanto a
+    // los textos fijos de esta vista como a los datos dinámicos (nombre del
+    // paciente, etc.), que también pueden traer tildes.
+    Func<string, string> Enc = (s) =>
+    {
+        if (string.IsNullOrEmpty(s)) return s;
+        var sb = new System.Text.StringBuilder();
+        foreach (char c in s)
+        {
+            if (c > 127)
+                sb.Append("&#").Append((int)c).Append(";");
+            else
+                sb.Append(c);
+        }
+        return sb.ToString();
+    };
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Odontograma - @Html.Raw(Model.Paciente != null ? Enc(Model.Paciente.Nombres + " " + Model.Paciente.ApellidoPaterno) : "Paciente")</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12px; color: #222; margin: 24px; }
+        h1 { font-size: 18px; margin: 0 0 4px 0; color: #1F4E79; }
+        .subtitulo { font-size: 11px; color: #666; margin-bottom: 16px; }
+        table.datos { width: 100%; margin-bottom: 14px; border-collapse: collapse; }
+        table.datos td { padding: 3px 12px 3px 0; font-size: 12px; }
+        .arcada { text-align: center; white-space: nowrap; }
+        .pieza-wrapper { display: inline-block; margin: 2px; vertical-align: top; text-align: center; }
+        .numero { font-size: 10px; font-weight: bold; color: #555; }
+        .divisor { display: inline-block; width: 2px; height: 60px; background: #ccc; margin: 0 8px; vertical-align: middle; }
+        .separador { border-top: 1px dashed #aaa; margin: 14px auto; max-width: 620px; }
+        .leyenda { margin-top: 18px; font-size: 10px; }
+        .leyenda-item { display: inline-block; margin-right: 12px; margin-bottom: 4px; }
+        .leyenda-color { display: inline-block; width: 10px; height: 10px; border: 1px solid #333; margin-right: 4px; vertical-align: middle; }
+        .alerta { background: #fff8e1; border: 1px solid #ffca28; padding: 6px 10px; margin-bottom: 12px; font-size: 11px; }
+        .footer { margin-top: 22px; font-size: 9px; color: #888; border-top: 1px solid #eee; padding-top: 6px; }
+    </style>
+</head>
+<body>
+    <h1>Odontograma dental</h1>
+    <div class="subtitulo">Consultorio Odontol&oacute;gico Romero &mdash; OdontoSystem</div>
+
+    <table class="datos">
+        <tr>
+            <td><strong>Paciente:</strong> @Html.Raw(Model.Paciente != null ? Enc(Model.Paciente.Nombres + " " + Model.Paciente.ApellidoPaterno + " " + Model.Paciente.ApellidoMaterno) : "&mdash;")</td>
+            <td><strong>Documento:</strong> @Html.Raw(Enc(tipoDoc)) @Html.Raw(Model.Paciente != null ? Enc(Model.Paciente.NumeroDocumento) : "&mdash;")</td>
+        </tr>
+        <tr>
+            <td><strong>Fecha de generaci&oacute;n del reporte:</strong> @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</td>
+            <td><strong>Sesi&oacute;n (cita) N.&deg;:</strong> @Model.IdCita &nbsp;&mdash;&nbsp; @Model.FechaRegistro.ToString("dd/MM/yyyy")</td>
+        </tr>
+    </table>
+
+    @if (sinRegistros)
+    {
+        <div class="alerta">
+            Este odontograma no tiene piezas con alteraciones registradas.
+            Todas las piezas se muestran en estado inicial (Sin alteraci&oacute;n).
+        </div>
+    }
+
+    <div class="arcada">
+        @foreach (var n in piezasSupDer)
+        {
+            <span class="pieza-wrapper">
+                <div class="numero">@n</div>
+                @Html.Raw(dienteSvg(n))
+            </span>
+        }
+        <span class="divisor"></span>
+        @foreach (var n in piezasSupIzq)
+        {
+            <span class="pieza-wrapper">
+                <div class="numero">@n</div>
+                @Html.Raw(dienteSvg(n))
+            </span>
+        }
+    </div>
+
+    <div class="separador"></div>
+
+    <div class="arcada">
+        @foreach (var n in piezasInfDer)
+        {
+            <span class="pieza-wrapper">
+                @Html.Raw(dienteSvg(n))
+                <div class="numero">@n</div>
+            </span>
+        }
+        <span class="divisor"></span>
+        @foreach (var n in piezasInfIzq)
+        {
+            <span class="pieza-wrapper">
+                @Html.Raw(dienteSvg(n))
+                <div class="numero">@n</div>
+            </span>
+        }
+    </div>
+
+    <div class="leyenda">
+        <strong>Leyenda de estados:</strong><br />
+        @foreach (var kv in coloresEstado)
+        {
+            <span class="leyenda-item"><span class="leyenda-color" style="background:@kv.Value"></span>@kv.Key</span>
+        }
+    </div>
+
+    <div class="footer">
+        Documento generado autom&aacute;ticamente por OdontoSystem &mdash; @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss").
+        Este reporte refleja el estado del odontograma al momento de su generaci&oacute;n y no reemplaza el registro digital interactivo.
+    </div>
+</body>
+</html>

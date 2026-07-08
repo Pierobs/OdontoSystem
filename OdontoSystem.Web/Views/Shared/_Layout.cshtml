@@ -199,6 +199,9 @@
                             @Session["NombreCompleto"]
                             <small class="ms-1 opacity-75">(@Session["Rol"])</small>
                         </span>
+                        <a class="btn btn-outline-light btn-sm" href="@Url.Action("CambiarMiPassword","Account")" title="Cambiar mi contraseña">
+                            <i class="fa-solid fa-key"></i>
+                        </a>
                         <a class="btn-logout" href="@Url.Action("Logout","Account")">
                             <i class="fa-solid fa-right-from-bracket"></i> Salir
                         </a>

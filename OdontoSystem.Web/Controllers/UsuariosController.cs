@@ -16,6 +16,12 @@ namespace OdontoSystem.Web.Controllers
             return View(_service.Listar());
         }
 
+        public ActionResult Buscar(string criterio)
+        {
+            ViewBag.Criterio = criterio;
+            return View("Index", _service.Buscar(criterio));
+        }
+
         public ActionResult Crear()
         {
             ViewBag.Roles = _service.ListarRoles();

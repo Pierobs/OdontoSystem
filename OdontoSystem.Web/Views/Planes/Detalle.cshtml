@@ -5,6 +5,8 @@
     var citasAtendidas = ViewBag.CitasAtendidas as IEnumerable<OdontoSystem.Entities.Cita>;
     var pagos = ViewBag.Pagos as IEnumerable<OdontoSystem.BLL.Services.PagoService.PagoDto>;
     var metodosPago = ViewBag.MetodosPago as string[];
+    int totalPagos = pagos != null ? pagos.Count() : 0;
+    int totalSesiones = evoluciones != null ? evoluciones.Count() : 0;
 }
 
 <div class="container mt-4">
@@ -28,40 +30,71 @@
         </div>
     }
 
-    <div class="row">
+    <div class="row mb-3">
         <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header bg-primary text-white">
-                    <strong>Información del Plan</strong>
+            <div class="card h-100">
+                <div class="card-header text-white d-flex align-items-center gap-2"
+                     style="background:#1D6FA8">
+                    <i class="fa-solid fa-user"></i>
+                    <strong>Información del paciente</strong>
                 </div>
-                <div class="card-body">
-                    <p><strong>Paciente:</strong> @Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno @Model.Paciente.ApellidoMaterno</p>
-                    <p><strong>Documento:</strong> @Model.Paciente.NumeroDocumento</p>
-                    <p><strong>Fecha creación:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</p>
-                    <p>
-                        <strong>Estado:</strong>
-                        @switch (Model.Estado)
-                        {
-                            case "Activo":<span class="badge bg-warning text-dark">Activo</span> break;
-                            case "Pagado": <span class="badge bg-success">Pagado</span> break;
-                            case "Cancelado":<span class="badge bg-danger">Cancelado</span>break;
-                        }
-                    </p>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tr>
+                            <td class="text-muted" style="width:40%">Paciente</td>
+                            <td><strong>@Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno @Model.Paciente.ApellidoMaterno</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Documento</td>
+                            <td>@Model.Paciente.NumeroDocumento</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Fecha creación</td>
+                            <td>@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Estado</td>
+                            <td>
+                                @switch (Model.Estado)
+                                {
+                                    case "Activo":<span class="badge bg-warning text-dark">Activo</span> break;
+                                    case "Pagado": <span class="badge bg-success">Pagado</span> break;
+                                    case "Cancelado":<span class="badge bg-danger">Cancelado</span>break;
+                                }
+                            </td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>
-
         <div class="col-md-6">
-            <div class="card mb-3">
-                <div class="card-header bg-info text-white">
-                    <strong>Resumen Financiero</strong>
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center gap-2"
+                     style="background:#f8f9fa">
+                    <i class="fa-solid fa-file-invoice-dollar text-secondary"></i>
+                    <strong class="text-secondary">Resumen financiero</strong>
                 </div>
-                <div class="card-body">
-                    <table class="table table-sm mb-0">
-                        <tr><td>Monto Total:</td>    <td class="text-end"><strong>S/. @Model.MontoTotal.ToString("N2")</strong></td></tr>
-                        <tr><td>Abonado:</td>         <td class="text-end text-success">S/. @Model.MontoAbonado.ToString("N2")</td></tr>
-                        <tr><td>Saldo Pendiente:</td> <td class="text-end text-danger"><strong>S/. @Model.Saldo.ToString("N2")</strong></td></tr>
-                    </table>
+                <div class="card-body d-flex align-items-center">
+                    <div class="row g-3 w-100 text-center">
+                        <div class="col-4">
+                            <div class="p-2 rounded" style="background:#f0f4ff">
+                                <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Total</div>
+                                <div class="mt-1 fw-bold" style="font-size:18px">S/. @Model.MontoTotal.ToString("N2")</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded" style="background:#f0fff4">
+                                <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Abonado</div>
+                                <div class="mt-1 fw-bold text-success" style="font-size:18px">S/. @Model.MontoAbonado.ToString("N2")</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded" style="background:#fff5f5">
+                                <div class="text-muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.04em">Saldo</div>
+                                <div class="mt-1 fw-bold text-danger" style="font-size:18px">S/. @Model.Saldo.ToString("N2")</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -69,7 +102,7 @@
 
     <div class="card mb-3">
         <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-            <strong>Tratamientos incluidos</strong>
+            <strong><i class="fa-solid fa-tooth me-1"></i> Tratamientos incluidos</strong>
             @if (Model.Estado == "Activo")
             {
                 <button type="button" class="btn btn-sm btn-light"
@@ -89,7 +122,7 @@
                         <th class="text-center">Estado</th>
                         <th class="text-center">Precio</th>
                         <th class="text-end">Subtotal</th>
-                        @if (Model.Estado == "Activo")
+                        @if (Model.Estado == "Activo" || Model.Estado == "Pagado")
                         {
                             <th class="text-center">Sesiones</th>
                             <th></th>
@@ -100,7 +133,7 @@
                     @{
                         int contador = 0;
                         string badgeColor = "bg-secondary";
-                        int sesiones = 0;
+                        int sesionesDetalle = 0;
                     }
                     @foreach (var d in Model.Detalles)
                     {
@@ -112,52 +145,75 @@
                             case "Cancelado": badgeColor = "bg-danger"; break;
                             default: badgeColor = "bg-secondary"; break;
                         }
-                        sesiones = evoluciones != null
+                        sesionesDetalle = evoluciones != null
                             ? evoluciones.Count(e => e.IdPlanDetalle == d.IdPlanDetalle)
                             : 0;
                         <tr>
                             <td>@contador</td>
                             <td>@d.Tratamiento.Nombre</td>
+                            <td class="text-center">@(d.NumeroPieza.HasValue ? d.NumeroPieza.ToString() : "—")</td>
+                            <td class="text-center">@(string.IsNullOrEmpty(d.Superficie) ? "—" : d.Superficie)</td>
                             <td class="text-center">
-                                @(d.NumeroPieza.HasValue ? d.NumeroPieza.ToString() : "—")
-                            </td>
-                            <td class="text-center">
-                                @(string.IsNullOrEmpty(d.Superficie) ? "—" : d.Superficie)
-                            </td>
-                            <td class="text-center">
-                                <span class="badge @badgeColor">
-                                    @(d.EstadoTratamiento ?? "Pendiente")
-                                </span>
+                                <span class="badge @badgeColor">@(d.EstadoTratamiento ?? "Pendiente")</span>
                             </td>
                             <td class="text-center">S/. @d.PrecioUnitario.ToString("N2")</td>
                             <td class="text-end">S/. @d.Subtotal.ToString("N2")</td>
-                            @if (Model.Estado == "Activo")
+                            @if (Model.Estado == "Activo" || Model.Estado == "Pagado")
                             {
-                                <td class="text-center">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-primary"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#modalEvolucion-@d.IdPlanDetalle"
-                                            title="Registrar sesión de trabajo">
-                                        <i class="fa-solid fa-notes-medical"></i>
-                                        @if (sesiones > 0)
+                                    <td class="text-center">
+                                        @if (d.EstadoTratamiento == "Completado" || d.EstadoTratamiento == "Cancelado")
                                         {
-                                            <span class="badge bg-primary ms-1">@sesiones</span>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                    title="Tratamiento @d.EstadoTratamiento.ToLower() — no se pueden agregar sesiones">
+                                                <i class="fa-solid fa-notes-medical"></i>
+                                                @if (sesionesDetalle > 0)
+                                                {
+                                                    <span class="badge bg-secondary ms-1">@sesionesDetalle</span>
+                                                }
+                                            </button>
                                         }
-                                    </button>
-                                </td>
-                                <td>
-                                    <form action="@Url.Action("QuitarDetalle", "Planes")" method="post"
-                                          onsubmit="return confirm('¿Quitar este tratamiento del plan?');"
-                                          style="display:inline;">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="idPlanDetalle" value="@d.IdPlanDetalle" />
-                                        <input type="hidden" name="idPlan" value="@Model.IdPlan" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </button>
-                                    </form>
-                                </td>
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modalEvolucion-@d.IdPlanDetalle"
+                                                    title="Registrar sesión">
+                                                <i class="fa-solid fa-notes-medical"></i>
+                                                @if (sesionesDetalle > 0)
+                                                {
+                                                    <span class="badge bg-primary ms-1">@sesionesDetalle</span>
+                                                }
+                                            </button>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (d.EstadoTratamiento == "Completado")
+                                        {
+                                            <span class="btn btn-sm btn-success disabled">
+                                                <i class="fa-solid fa-check"></i>
+                                            </span>
+                                        }
+                                        else if (d.EstadoTratamiento == "Cancelado")
+                                        {
+                                            <span class="btn btn-sm btn-danger disabled">
+                                                <i class="fa-solid fa-ban"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <form action="@Url.Action("QuitarDetalle", "Planes")" method="post"
+                                                  onsubmit="return confirm('¿Quitar este tratamiento del plan?');"
+                                                  style="display:inline;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="idPlanDetalle" value="@d.IdPlanDetalle" />
+                                                <input type="hidden" name="idPlan" value="@Model.IdPlan" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="fa-solid fa-xmark"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
                             }
                         </tr>
                     }
@@ -166,10 +222,11 @@
         </div>
     </div>
 
-    @if (Model.Estado == "Activo")
-    {
-        <div class="d-flex gap-2 mb-4">
-            @if (Model.Saldo == 0)
+    @* Botones de acción *@
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        @if (Model.Estado == "Activo")
+        {
+            if (Model.Saldo == 0)
             {
                 <form action="@Url.Action("Cerrar", "Planes")" method="post"
                       onsubmit="return confirm('¿Cerrar este plan como pagado?');">
@@ -188,162 +245,214 @@
                     <i class="fa-solid fa-ban"></i> Cancelar plan
                 </button>
             </form>
-        </div>
-    }
+        }
+        @if (totalPagos > 0)
+        {
+            <button type="button" class="btn btn-outline-success"
+                    data-bs-toggle="modal" data-bs-target="#modalHistorialPagos">
+                <i class="fa-solid fa-receipt"></i> Historial de pagos
+                <span class="badge bg-success ms-1">@totalPagos</span>
+            </button>
+        }
+        @if (totalSesiones > 0)
+        {
+            <button type="button" class="btn btn-outline-info"
+                    data-bs-toggle="modal" data-bs-target="#modalHistorialSesiones">
+                <i class="fa-solid fa-clock-rotate-left"></i> Historial de sesiones
+                <span class="badge bg-info ms-1">@totalSesiones</span>
+            </button>
+        }
+    </div>
 
-    @* Registrar pago *@
     @if (Model.Estado == "Activo" && Model.Saldo > 0)
     {
-        <div class="card mb-3 border-success">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <strong><i class="fa-solid fa-money-bill-wave"></i> Registrar Pago</strong>
-                <small>Saldo pendiente: <strong>S/. @Model.Saldo.ToString("N2")</strong></small>
-            </div>
-            <div class="card-body">
-                <form action="@Url.Action("Registrar", "Pagos")" method="post"
-                      class="row g-3 align-items-end">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="idPlan" value="@Model.IdPlan" />
-                    <div class="col-md-3">
-                        <label class="form-label">Monto (S/.) *</label>
-                        <input type="number" name="monto" class="form-control"
-                               step="0.01" min="0.01"
-                               max="@Model.Saldo.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
-                               placeholder="0.00" required />
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Método de pago *</label>
-                        <select name="metodoPago" class="form-select" required>
-                            <option value="">-- Seleccione --</option>
-                            @if (metodosPago != null)
-                            {
-                                foreach (var m in metodosPago)
-                                {
-                                    <option value="@m">@m</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="button" class="btn btn-outline-success w-100"
-                                onclick="document.querySelector('input[name=monto]').value='@Model.Saldo.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)'">
-                            Pagar saldo completo
-                        </button>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fa-solid fa-check"></i> Registrar pago
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <button type="button" class="btn btn-success"
+                data-bs-toggle="modal" data-bs-target="#modalRegistrarPago">
+            <i class="fa-solid fa-money-bill-wave"></i> Registrar pago
+            <span class="badge bg-white text-success ms-1">S/. @Model.Saldo.ToString("N2") pendiente</span>
+        </button>
     }
 
-    @* Historial de pagos *@
-    @if (pagos != null && pagos.Any())
+    @* Modal registrar pago *@
+    @if (Model.Estado == "Activo" && Model.Saldo > 0)
     {
-        <div class="card mb-3">
-            <div class="card-header bg-success text-white">
-                <strong><i class="fa-solid fa-receipt"></i> Historial de pagos</strong>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Método</th>
-                            <th class="text-end">Monto</th>
-                            <th>Registrado por</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var p in pagos)
-                        {
-                            <tr>
-                                <td class="text-nowrap">@p.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>
-                                    @{
-                                        string iconoPago;
-                                        switch (p.MetodoPago)
+        <div class="modal fade" id="modalRegistrarPago" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-money-bill-wave me-1"></i> Registrar pago
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="@Url.Action("Registrar", "Pagos")" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="idPlan" value="@Model.IdPlan" />
+                        <div class="modal-body">
+                            <div class="alert alert-info py-2">
+                                <strong>Saldo pendiente:</strong> S/. @Model.Saldo.ToString("N2")
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Monto (S/.) *</label>
+                                <input type="number" name="monto" id="inputMontoPago" class="form-control"
+                                       step="0.01" min="0.01"
+                                       max="@Model.Saldo.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)"
+                                       placeholder="0.00" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Método de pago *</label>
+                                <select name="metodoPago" class="form-select" required>
+                                    <option value="">-- Seleccione --</option>
+                                    @if (metodosPago != null)
+                                    {
+                                        foreach (var m in metodosPago)
                                         {
-                                            case "Efectivo": iconoPago = "fa-money-bill-wave"; break;
-                                            case "Tarjeta": iconoPago = "fa-credit-card"; break;
-                                            case "Transferencia": iconoPago = "fa-building-columns"; break;
-                                            case "Yape": iconoPago = "fa-mobile-screen"; break;
-                                            case "Plin": iconoPago = "fa-mobile-screen"; break;
-                                            default: iconoPago = "fa-circle-dollar-to-slot"; break;
+                                            <option value="@m">@m</option>
                                         }
                                     }
-                                    <i class="fa-solid @iconoPago me-1"></i>@p.MetodoPago
-                                </td>
-                                <td class="text-end text-success fw-bold">S/. @p.Monto.ToString("N2")</td>
-                                <td>@p.NombresUsuario @p.ApellidoUsuario</td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-light">
-                        <tr>
-                            <td colspan="2"><strong>Total abonado</strong></td>
-                            <td class="text-end"><strong>S/. @Model.MontoAbonado.ToString("N2")</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-outline-success w-100"
+                                    onclick="document.getElementById('inputMontoPago').value='@Model.Saldo.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)'">
+                                <i class="fa-solid fa-check-double"></i> Pagar saldo completo
+                            </button>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fa-solid fa-check"></i> Registrar pago
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     }
 
-    @* Historial de sesiones *@
-    @if (evoluciones != null && evoluciones.Any())
+    @* Modal historial de pagos *@
+    @if (totalPagos > 0)
     {
-        <div class="card mb-3">
-            <div class="card-header bg-dark text-white">
-                <strong><i class="fa-solid fa-clock-rotate-left"></i> Historial de sesiones</strong>
+        <div class="modal fade" id="modalHistorialPagos" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-receipt me-1"></i> Historial de pagos
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Método</th>
+                                    <th class="text-end">Monto</th>
+                                    <th>Registrado por</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in pagos)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap">@p.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                        <td>
+                                            @{
+                                                string iconoPago;
+                                                switch (p.MetodoPago)
+                                                {
+                                                    case "Efectivo": iconoPago = "fa-money-bill-wave"; break;
+                                                    case "Tarjeta": iconoPago = "fa-credit-card"; break;
+                                                    case "Transferencia": iconoPago = "fa-building-columns"; break;
+                                                    case "Yape": iconoPago = "fa-mobile-screen"; break;
+                                                    case "Plin": iconoPago = "fa-mobile-screen"; break;
+                                                    default: iconoPago = "fa-circle-dollar-to-slot"; break;
+                                                }
+                                            }
+                                            <i class="fa-solid @iconoPago me-1"></i>@p.MetodoPago
+                                        </td>
+                                        <td class="text-end text-success fw-bold">S/. @p.Monto.ToString("N2")</td>
+                                        <td>@p.NombresUsuario @p.ApellidoUsuario</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="2"><strong>Total abonado</strong></td>
+                                    <td class="text-end"><strong>S/. @Model.MontoAbonado.ToString("N2")</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Tratamiento</th>
-                            <th class="text-center">Pieza</th>
-                            <th class="text-center">Superficie</th>
-                            <th>Odontólogo</th>
-                            <th>Descripción</th>
-                            <th class="text-center">Cita</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var ev in evoluciones)
-                        {
-                            <tr>
-                                <td class="text-nowrap">@ev.FechaEvolucion.ToString("dd/MM/yyyy")</td>
-                                <td>@ev.NombreTratamiento</td>
-                                <td class="text-center">@(ev.NumeroPieza.HasValue ? ev.NumeroPieza.ToString() : "—")</td>
-                                <td class="text-center">@(string.IsNullOrEmpty(ev.Superficie) ? "—" : ev.Superficie)</td>
-                                <td>Dr. @ev.ApellidoOdontologo</td>
-                                <td>@ev.Descripcion</td>
-                                <td class="text-center">
-                                    @if (ev.IdCita.HasValue)
-                                    {
-                                        <span class="badge bg-info">Cita #@ev.IdCita</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted">—</span>
-                                    }
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+        </div>
+    }
+
+    @* Modal historial de sesiones *@
+    @if (totalSesiones > 0)
+    {
+        <div class="modal fade" id="modalHistorialSesiones" tabindex="-1">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i> Historial de sesiones
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tratamiento</th>
+                                    <th class="text-center">Pieza</th>
+                                    <th class="text-center">Superficie</th>
+                                    <th>Odontólogo</th>
+                                    <th style="max-width:200px">Descripción</th>
+                                    <th class="text-center">Cita</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ev in evoluciones)
+                                {
+                                    <tr>
+                                        <td class="text-nowrap">@ev.FechaEvolucion.ToString("dd/MM/yyyy")</td>
+                                        <td>@ev.NombreTratamiento</td>
+                                        <td class="text-center">@(ev.NumeroPieza.HasValue ? ev.NumeroPieza.ToString() : "—")</td>
+                                        <td class="text-center">@(string.IsNullOrEmpty(ev.Superficie) ? "—" : ev.Superficie)</td>
+                                        <td>Dr. @ev.ApellidoOdontologo</td>
+                                        <td style="max-width:200px;white-space:normal;word-break:break-word">@ev.Descripcion</td>
+                                        <td class="text-center">
+                                            @if (ev.IdCita.HasValue)
+                                            {
+                                                <span class="badge bg-info">Cita #@ev.IdCita</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">—</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
             </div>
         </div>
     }
 
     @* Modales de evolución por tratamiento *@
-    @if (Model.Estado == "Activo")
+    @if (Model.Estado == "Activo" || Model.Estado == "Pagado")
     {
         foreach (var d in Model.Detalles)
         {
@@ -418,7 +527,7 @@
         }
     }
 
-    @* Modal Agregar tratamiento *@
+    @* Modal agregar tratamiento *@
     <div class="modal fade" id="modalAgregar" tabindex="-1">
         <div class="modal-dialog">
             <form action="@Url.Action("AgregarDetalle", "Planes")" method="post">
@@ -426,7 +535,7 @@
                 <input type="hidden" name="idPlan" value="@Model.IdPlan" />
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">Agregar Tratamiento</h5>
+                        <h5 class="modal-title">Agregar tratamiento</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -439,7 +548,7 @@
                         <input type="hidden" name="cantidad" value="1" />
                         <input type="hidden" name="estadoTratamiento" value="Pendiente" />
                         <div class="mb-3">
-                            <label class="form-label">Precio Unit. *</label>
+                            <label class="form-label">Precio unitario *</label>
                             <input type="number" name="precioUnitario" id="modalInputPrecio"
                                    class="form-control" step="0.01" min="0" required />
                         </div>
@@ -451,13 +560,73 @@
                         <div class="row g-2">
                             <div class="col-5">
                                 <label class="form-label">Pieza FDI</label>
-                                <input type="number" name="numeroPieza" class="form-control"
-                                       min="11" max="85" placeholder="Ej: 47 (opcional)" />
-                                <small class="text-muted">11–28 superior / 31–48 inferior</small>
+                                <select name="numeroPieza" class="form-select form-select-sm">
+                                    <option value="">-- General --</option>
+                                    <optgroup label="Superiores permanentes">
+                                        <option>11</option>
+                                        <option>12</option>
+                                        <option>13</option>
+                                        <option>14</option>
+                                        <option>15</option>
+                                        <option>16</option>
+                                        <option>17</option>
+                                        <option>18</option>
+                                        <option>21</option>
+                                        <option>22</option>
+                                        <option>23</option>
+                                        <option>24</option>
+                                        <option>25</option>
+                                        <option>26</option>
+                                        <option>27</option>
+                                        <option>28</option>
+                                    </optgroup>
+                                    <optgroup label="Inferiores permanentes">
+                                        <option>31</option>
+                                        <option>32</option>
+                                        <option>33</option>
+                                        <option>34</option>
+                                        <option>35</option>
+                                        <option>36</option>
+                                        <option>37</option>
+                                        <option>38</option>
+                                        <option>41</option>
+                                        <option>42</option>
+                                        <option>43</option>
+                                        <option>44</option>
+                                        <option>45</option>
+                                        <option>46</option>
+                                        <option>47</option>
+                                        <option>48</option>
+                                    </optgroup>
+                                    <optgroup label="Superiores temporales">
+                                        <option>51</option>
+                                        <option>52</option>
+                                        <option>53</option>
+                                        <option>54</option>
+                                        <option>55</option>
+                                        <option>61</option>
+                                        <option>62</option>
+                                        <option>63</option>
+                                        <option>64</option>
+                                        <option>65</option>
+                                    </optgroup>
+                                    <optgroup label="Inferiores temporales">
+                                        <option>71</option>
+                                        <option>72</option>
+                                        <option>73</option>
+                                        <option>74</option>
+                                        <option>75</option>
+                                        <option>81</option>
+                                        <option>82</option>
+                                        <option>83</option>
+                                        <option>84</option>
+                                        <option>85</option>
+                                    </optgroup>
+                                </select>
                             </div>
                             <div class="col-7">
                                 <label class="form-label">Superficie</label>
-                                <select name="superficie" class="form-select">
+                                <select name="superficie" class="form-select form-select-sm">
                                     <option value="">-- General (toda la pieza) --</option>
                                     <option value="Vestibular">Vestibular</option>
                                     <option value="Oclusal">Oclusal</option>
@@ -477,6 +646,7 @@
             </form>
         </div>
     </div>
+
 </div>
 
 @section Scripts {

@@ -30,6 +30,12 @@ namespace OdontoSystem.Web.Controllers
             return View(planes);
         }
 
+        public ActionResult Buscar(string criterio)
+        {
+            ViewBag.Criterio = criterio;
+            return View("Index", _service.Buscar(criterio));
+        }
+
         public ActionResult Detalle(int id)
         {
             var plan = _service.ObtenerPorId(id);

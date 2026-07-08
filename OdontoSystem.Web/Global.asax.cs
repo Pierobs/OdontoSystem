@@ -16,6 +16,11 @@ namespace OdontoSystem.Web
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+            // HU-14: esta versión de Rotativa NO tiene una clase RotativaConfiguration.
+            // No hace falta configurar nada aquí: si ActionAsPdf.WkhtmlPath queda vacío,
+            // la librería lo resuelve sola a Server.MapPath("~/Rotativa") — la carpeta
+            // que el propio paquete NuGet ya copió con wkhtmltopdf.exe adentro.
         }
     }
 }

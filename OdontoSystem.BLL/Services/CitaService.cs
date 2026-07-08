@@ -277,6 +277,29 @@ namespace OdontoSystem.BLL.Services
                           .ToList();
             }
         }
+
+        public IEnumerable<Cita> Buscar(string criterio)
+        {
+            if (string.IsNullOrWhiteSpace(criterio))
+                return Listar();
+
+            criterio = criterio.ToLower();
+            using (var db = new OdontoContext())
+            {
+                return db.Citas
+                    .Include("Paciente")
+                    .Include("Odontologo")
+                    .Where(c =>
+                        c.Paciente.Nombres.ToLower().Contains(criterio) ||
+                        c.Paciente.ApellidoPaterno.ToLower().Contains(criterio) ||
+                        c.Paciente.ApellidoMaterno.ToLower().Contains(criterio) ||
+                        c.Paciente.NumeroDocumento.Contains(criterio) ||
+                        c.Odontologo.Nombres.ToLower().Contains(criterio) ||
+                        c.Odontologo.ApellidoPaterno.ToLower().Contains(criterio))
+                    .OrderByDescending(c => c.FechaCita)
+                    .ToList();
+            }
+        }
     }
 
 }

@@ -63,14 +63,22 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>Odontograma — @Model.Paciente.Nombres @Model.Paciente.ApellidoPaterno</h2>
-        @if (ViewBag.SoloLectura == true)
-        {
-            <a href="@Url.Action("Index", "Pacientes")" class="btn btn-secondary">← Volver a Pacientes</a>
-        }
-        else
-        {
-            <a href="@Url.Action("Index", "Citas")" class="btn btn-secondary">← Volver a Citas</a>
-        }
+        <div class="d-flex gap-2">
+            @* HU-14: exportar el odontograma actual a PDF. Se abre en pestaña nueva
+               para no perder el estado de la vista interactiva. *@
+            <a href="@Url.Action("ExportarPDF", "OdontogramaPdf", new { id = Model.IdOdontograma })"
+               class="btn btn-outline-danger" target="_blank">
+                <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+            </a>
+            @if (ViewBag.SoloLectura == true)
+            {
+                <a href="@Url.Action("Index", "Pacientes")" class="btn btn-secondary">← Volver a Pacientes</a>
+            }
+            else
+            {
+                <a href="@Url.Action("Index", "Citas")" class="btn btn-secondary">← Volver a Citas</a>
+            }
+        </div>
     </div>
 
     <div class="row mb-3">
@@ -136,21 +144,94 @@
     @* Acciones post-odontograma *@
     @if (ViewBag.SoloLectura != true && (Session["Rol"]?.ToString() == "Odontologo" || Session["Rol"]?.ToString() == "Administrador"))
     {
-        <div class="card mt-3">
+        <div class="card mt-4">
             <div class="card-body d-flex justify-content-between align-items-center">
                 <div>
-                    <h6 class="mb-1">¿Listo con el diagnóstico?</h6>
-                    <small class="text-muted">Crea un plan de tratamiento basado en los hallazgos del odontograma</small>
+                    <strong>¿Listo con el diagnóstico?</strong>
+                    <p class="text-muted mb-0" style="font-size:0.9em">
+                        Crea un plan de tratamiento basado en los hallazgos del odontograma
+                    </p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="@Url.Action("Index", "Planes", new { idPaciente = Model.IdPaciente })"
-                       class="btn btn-outline-info">
+                    <button type="button" class="btn btn-outline-info"
+                            data-bs-toggle="modal" data-bs-target="#modalPlanesPaciente">
                         <i class="fa-solid fa-clipboard-list"></i> Ver planes del paciente
-                    </a>
+                    </button>
                     <a href="@Url.Action("Crear", "Planes", new { idPaciente = Model.IdPaciente })"
                        class="btn btn-success">
                         <i class="fa-solid fa-plus"></i> Crear plan de tratamiento
                     </a>
+                </div>
+            </div>
+        </div>
+
+        @* Modal planes del paciente *@
+        <div class="modal fade" id="modalPlanesPaciente" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">
+                            <i class="fa-solid fa-clipboard-list me-1"></i> Planes del paciente
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        @{
+                            var planesService = new OdontoSystem.BLL.Services.PlanTratamientoService();
+                            var planes = planesService.ListarPorPaciente(Model.IdPaciente);
+                        }
+                        @if (planes != null && planes.Any())
+                        {
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Tratamientos</th>
+                                        <th>Total</th>
+                                        <th>Saldo</th>
+                                        <th>Estado</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var plan in planes)
+                                    {
+                                        <tr>
+                                            <td>@plan.FechaCreacion.ToString("dd/MM/yyyy")</td>
+                                            <td>@plan.Detalles.Count tratamiento(s)</td>
+                                            <td>S/. @plan.MontoTotal.ToString("N2")</td>
+                                            <td class="text-danger">S/. @plan.Saldo.ToString("N2")</td>
+                                            <td>
+                                                @switch (plan.Estado)
+                                                {
+                                                    case "Activo":<span class="badge bg-warning text-dark">Activo</span> break;
+                                                    case "Pagado": <span class="badge bg-success">Pagado</span> break;
+                                                    case "Cancelado":<span class="badge bg-danger">Cancelado</span>break;
+                                                }
+                                            </td>
+                                            <td>
+                                                <a href="@Url.Action("Detalle", "Planes", new { id = plan.IdPlan })"
+                                                   class="btn btn-sm btn-outline-info" target="_blank">
+                                                    <i class="fa-solid fa-eye"></i> Ver
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info m-3">Este paciente no tiene planes registrados.</div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <a href="@Url.Action("Crear", "Planes", new { idPaciente = Model.IdPaciente })"
+                           class="btn btn-success">
+                            <i class="fa-solid fa-plus"></i> Crear nuevo plan
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -205,5 +205,25 @@ namespace OdontoSystem.BLL.Services
                 return (int)(DIAS_VIGENCIA_PASSWORD - diasPasados);
             }
         }
+
+        public IEnumerable<Usuario> Buscar(string criterio)
+        {
+            if (string.IsNullOrWhiteSpace(criterio))
+                return Listar();
+
+            criterio = criterio.ToLower();
+            using (var db = new OdontoContext())
+            {
+                return db.Usuarios
+                    .Include("Rol")
+                    .Where(u =>
+                        u.Nombres.ToLower().Contains(criterio) ||
+                        u.ApellidoPaterno.ToLower().Contains(criterio) ||
+                        u.ApellidoMaterno.ToLower().Contains(criterio) ||
+                        u.CorreoInstitucional.ToLower().Contains(criterio))
+                    .OrderBy(u => u.ApellidoPaterno)
+                    .ToList();
+            }
+        }
     }
 }

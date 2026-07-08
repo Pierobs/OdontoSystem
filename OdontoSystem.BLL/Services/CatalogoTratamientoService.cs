@@ -77,5 +77,20 @@ namespace OdontoSystem.BLL.Services
                 repo.SaveChanges();
             }
         }
+
+        public IEnumerable<CatalogoTratamiento> Buscar(string criterio)
+        {
+            if (string.IsNullOrWhiteSpace(criterio))
+                return Listar();
+
+            criterio = criterio.ToLower();
+            using (var db = new OdontoContext())
+            {
+                return db.CatalogoTratamientos
+                    .Where(t => t.Nombre.ToLower().Contains(criterio))
+                    .OrderBy(t => t.Nombre)
+                    .ToList();
+            }
+        }
     }
 }

@@ -64,6 +64,33 @@ namespace OdontoSystem.BLL.Services
                 return repo.Buscar(criterio).ToList();
             }
         }
+
+        /// <summary>
+        /// B-05 — Autocompletado de paciente al agendar una cita. A diferencia de
+        /// Buscar(), solo devuelve pacientes Activos (no tendría sentido agendar
+        /// una cita a un paciente inactivo) y limita el resultado para que el
+        /// endpoint responda rápido aunque la clínica tenga miles de pacientes.
+        /// </summary>
+        public IEnumerable<Paciente> BuscarActivosPorNombre(string criterio)
+        {
+            if (string.IsNullOrWhiteSpace(criterio) || criterio.Trim().Length < 3)
+                return Enumerable.Empty<Paciente>();
+
+            string c = criterio.Trim();
+
+            using (var ctx = new OdontoContext())
+            {
+                return ctx.Pacientes
+                    .Where(p => p.Estado == "A" &&
+                           (p.Nombres.Contains(c) ||
+                            p.ApellidoPaterno.Contains(c) ||
+                            p.ApellidoMaterno.Contains(c) ||
+                            p.NumeroDocumento.Contains(c)))
+                    .OrderBy(p => p.ApellidoPaterno)
+                    .Take(10)
+                    .ToList();
+            }
+        }
     
     public Paciente Actualizar(Paciente paciente)
         {

@@ -19,6 +19,13 @@ namespace OdontoSystem.Web.Controllers
             return View(_service.Listar());
         }
 
+        public ActionResult Buscar(string criterio)
+        {
+            ViewBag.Odontologos = _service.ListarOdontologosActivos();
+            ViewBag.Criterio = criterio;
+            return View("Index", _service.Buscar(criterio));
+        }
+
         public ActionResult Detalle(int id)
         {
             var cita = _service.ObtenerPorId(id);
@@ -29,7 +36,8 @@ namespace OdontoSystem.Web.Controllers
 
         public ActionResult Crear()
         {
-            ViewBag.Pacientes = _service.ListarPacientesActivos();
+            // B-05: el paciente ya no se carga completo aquí — se busca en tiempo
+            // real desde Citas/Crear.cshtml vía Pacientes/BuscarPorNombre.
             ViewBag.Odontologos = _service.ListarOdontologosActivos();
             return View();
         }
@@ -62,8 +70,20 @@ namespace OdontoSystem.Web.Controllers
             catch (Exception ex)
             {
                 ModelState.AddModelError("", ex.Message);
-                ViewBag.Pacientes = _service.ListarPacientesActivos();
                 ViewBag.Odontologos = _service.ListarOdontologosActivos();
+
+                // B-05: si ya se había seleccionado un paciente antes de que fallara
+                // la validación, recuperamos su nombre para no perder la selección
+                // visual en el input de búsqueda (el IdPaciente ya viaja en cita).
+                if (cita.IdPaciente > 0)
+                {
+                    var pacienteSeleccionado = _service.ObtenerPaciente(cita.IdPaciente);
+                    if (pacienteSeleccionado != null)
+                        ViewBag.PacienteSeleccionadoTexto =
+                            $"{pacienteSeleccionado.ApellidoPaterno} {pacienteSeleccionado.ApellidoMaterno}, " +
+                            $"{pacienteSeleccionado.Nombres} — {pacienteSeleccionado.NumeroDocumento}";
+                }
+
                 return View(cita);
             }
         }
@@ -90,6 +110,10 @@ namespace OdontoSystem.Web.Controllers
                         cita.HoraCita,
                         motivo
                     );
+
+                    // HU-15, criterio E3: advertir si no se pudo notificar por falta de teléfono
+                    if (!_notif.TieneTelefonoValido(cita.Paciente.Telefono))
+                        TempData["Advertencia"] = "El paciente no tiene número de teléfono registrado. No se pudo enviar la notificación.";
                 }
 
                 TempData["Exito"] = "Cita cancelada correctamente";
@@ -125,6 +149,10 @@ namespace OdontoSystem.Web.Controllers
                         fechaAnterior, horaAnterior,
                         nuevaFecha, hora, motivo
                     );
+
+                    // HU-15, criterio E3: advertir si no se pudo notificar por falta de teléfono
+                    if (!_notif.TieneTelefonoValido(cita.Paciente.Telefono))
+                        TempData["Advertencia"] = "El paciente no tiene número de teléfono registrado. No se pudo enviar la notificación.";
                 }
 
                 TempData["Exito"] = "Cita reprogramada correctamente";

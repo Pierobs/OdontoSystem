@@ -20,18 +20,18 @@
         <div class="row g-3">
             <div class="col-md-4">
                 <label class="form-label">Apellido Paterno *</label>
-                <input name="ApellidoPaterno" class="form-control" required maxlength="50"
-                       value="@Model.ApellidoPaterno" />
+                <input name="ApellidoPaterno" id="inputApellidoPaterno" class="form-control" required maxlength="50"
+                       value="@Model.ApellidoPaterno" readonly />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Apellido Materno *</label>
-                <input name="ApellidoMaterno" class="form-control" required maxlength="50"
-                       value="@Model.ApellidoMaterno" />
+                <input name="ApellidoMaterno" id="inputApellidoMaterno" class="form-control" required maxlength="50"
+                       value="@Model.ApellidoMaterno" readonly />
             </div>
             <div class="col-md-4">
                 <label class="form-label">Nombres *</label>
-                <input name="Nombres" class="form-control" required maxlength="80"
-                       value="@Model.Nombres" />
+                <input name="Nombres" id="inputNombres" class="form-control" required maxlength="80"
+                       value="@Model.Nombres" readonly />
             </div>
 
             <div class="col-md-3">
@@ -44,8 +44,12 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">N° de Documento *</label>
-                <input name="NumeroDocumento" class="form-control" required maxlength="20"
-                       value="@Model.NumeroDocumento" />
+                <div class="input-group">
+                    <input name="NumeroDocumento" id="inputNumeroDocumento" class="form-control" required maxlength="20"
+                           value="@Model.NumeroDocumento" />
+                    <button type="button" id="btnValidarDni" class="btn btn-outline-secondary">Validar</button>
+                </div>
+                <div id="feedbackDni" class="mt-1" style="font-size: 0.85em;"></div>
             </div>
             <div class="col-md-3">
                 <label class="form-label">Sexo *</label>
@@ -62,9 +66,15 @@
 
             <div class="col-md-4">
                 <label class="form-label">Teléfono</label>
-                <input name="Telefono" class="form-control" maxlength="15"
-                       value="@Model.Telefono" />
+                <div class="input-group">
+                    <input name="Telefono" id="inputTelefono" class="form-control"
+                           maxlength="9" pattern="9[0-9]{8}"
+                           placeholder=" " value="@Model.Telefono" />
+                    <button type="button" id="btnValidarTelefono" class="btn btn-outline-secondary">Validar</button>
+                </div>
+                <div id="feedbackTelefono" class="mt-1" style="font-size: 0.85em;"></div>
             </div>
+
             <div class="col-md-4">
                 <label class="form-label">Correo</label>
                 <input type="email" name="Correo" id="inputCorreo" class="form-control"
@@ -168,4 +178,153 @@
             };
         })();
     </script>
+
+    <script>
+    // ─── Validación DNI RENIEC ──────────────────────────────
+    (function () {
+        const inputDni    = document.getElementById('inputNumeroDocumento');
+        const selectTipo  = document.querySelector('select[name="IdTipoDocumento"]');
+        const feedback    = document.getElementById('feedbackDni');
+        const btnValidar  = document.getElementById('btnValidarDni');
+        let dniValidado   = false;
+
+        if (!inputDni || !btnValidar) return;
+
+        function desbloquearCampos() {
+            document.getElementById('inputApellidoPaterno').removeAttribute('readonly');
+            document.getElementById('inputApellidoMaterno').removeAttribute('readonly');
+            document.getElementById('inputNombres').removeAttribute('readonly');
+        }
+
+        function bloquearCampos() {
+            document.getElementById('inputApellidoPaterno').setAttribute('readonly', true);
+            document.getElementById('inputApellidoMaterno').setAttribute('readonly', true);
+            document.getElementById('inputNombres').setAttribute('readonly', true);
+        }
+
+        // Si el usuario toca el DNI después de haberlo validado, resetear
+        inputDni.addEventListener('input', function () {
+            dniValidado = false;
+            feedback.innerHTML = '';
+            desbloquearCampos();
+        });
+
+        btnValidar.addEventListener('click', function () {
+            if (selectTipo.value !== '1') {
+                feedback.innerHTML = '<span class="text-secondary">Solo se valida DNI peruano.</span>';
+                return;
+            }
+
+            const dni = inputDni.value.trim();
+
+            if (dni.length !== 8 || isNaN(dni)) {
+                feedback.innerHTML = '<span class="text-danger">❌ El DNI debe tener exactamente 8 dígitos</span>';
+                return;
+            }
+
+            btnValidar.disabled = true;
+            btnValidar.textContent = 'Validando...';
+            feedback.innerHTML = '<span class="text-secondary">⏳ Consultando RENIEC...</span>';
+            dniValidado = false;
+
+            fetch('@Url.Action("ConsultarDni", "Pacientes")?dni=' + dni)
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+                    if (data.success) {
+                        document.getElementById('inputApellidoPaterno').value = data.apPaterno;
+                        document.getElementById('inputApellidoMaterno').value = data.apMaterno;
+                        document.getElementById('inputNombres').value         = data.nombre;
+                        feedback.innerHTML = '<span class="text-success">✅ DNI verificado en RENIEC</span>';
+                        bloquearCampos();
+                        dniValidado = true;
+                    } else {
+                        feedback.innerHTML = '<span class="text-danger">❌ ' + data.mensaje + '</span>';
+                        desbloquearCampos();
+                    }
+                })
+                .catch(function () {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+                    feedback.innerHTML = '<span class="text-warning">⚠️ Sin conexión con RENIEC. Puede editar manualmente.</span>';
+                    desbloquearCampos();
+                });
+        });
+
+        // Bloquear submit si no se validó el DNI (solo para tipo DNI)
+        document.querySelector('form').addEventListener('submit', function (e) {
+            if (selectTipo.value === '1' && !dniValidado) {
+                e.preventDefault();
+                feedback.innerHTML = '<span class="text-danger">❌ Debes validar el DNI con RENIEC antes de guardar.</span>';
+                inputDni.focus();
+            }
+        });
+
+    })();
+    </script>
+
+    <script>
+    // ─── Validación de teléfono ─────────────────────────────
+    (function () {
+        const inputTel   = document.getElementById('inputTelefono');
+        const feedback   = document.getElementById('feedbackTelefono');
+        const btnValidar = document.getElementById('btnValidarTelefono');
+
+        if (!inputTel || !btnValidar) return;
+
+        inputTel.addEventListener('input', function () {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9);
+            feedback.innerHTML = '';
+
+            const tel = this.value;
+            if (tel.length === 0) return;
+
+            if (tel.length < 9) {
+                feedback.innerHTML = '<span class="text-secondary">⏳ Faltan ' + (9 - tel.length) + ' dígitos</span>';
+                return;
+            }
+
+            if (!/^9\d{8}$/.test(tel)) {
+                feedback.innerHTML = '<span class="text-danger">❌ Debe empezar con 9 (ej: 987654321)</span>';
+                return;
+            }
+
+            feedback.innerHTML = '<span class="text-muted">Formato correcto. Clic en "Validar" para verificar con el operador.</span>';
+        });
+
+        btnValidar.addEventListener('click', function () {
+            const tel = inputTel.value;
+
+            if (!/^9\d{8}$/.test(tel)) {
+                feedback.innerHTML = '<span class="text-danger">❌ Debe empezar con 9 y tener 9 dígitos</span>';
+                return;
+            }
+
+            btnValidar.disabled = true;
+            btnValidar.textContent = 'Validando...';
+            feedback.innerHTML = '<span class="text-secondary">⏳ Verificando número...</span>';
+
+            fetch('@Url.Action("ValidarTelefono", "Pacientes")?telefono=' + tel)
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+
+                    if (data.valido) {
+                        feedback.innerHTML = '<span class="text-success">✅ Número válido' +
+                            (data.operadora ? ' — Operador: ' + data.operadora : '') + '</span>';
+                    } else {
+                        feedback.innerHTML = '<span class="text-warning">⚠️ ' + data.mensaje + '</span>';
+                    }
+                })
+                .catch(function () {
+                    btnValidar.disabled = false;
+                    btnValidar.textContent = 'Validar';
+                    feedback.innerHTML = '<span class="text-danger">❌ Error al validar. Intenta de nuevo.</span>';
+                });
+        });
+    })();
+    </script>
+
 }

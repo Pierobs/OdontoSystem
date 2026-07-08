@@ -204,5 +204,26 @@ namespace OdontoSystem.BLL.Services
                 ctx.SaveChanges();
             }
         }
+
+        public IEnumerable<PlanTratamiento> Buscar(string criterio)
+        {
+            if (string.IsNullOrWhiteSpace(criterio))
+                return Listar();
+
+            criterio = criterio.ToLower();
+            using (var db = new OdontoContext())
+            {
+                return db.PlanesTratamiento
+                    .Include("Paciente")
+                    .Include("Detalles")
+                    .Where(p =>
+                        p.Paciente.Nombres.ToLower().Contains(criterio) ||
+                        p.Paciente.ApellidoPaterno.ToLower().Contains(criterio) ||
+                        p.Paciente.ApellidoMaterno.ToLower().Contains(criterio) ||
+                        p.Paciente.NumeroDocumento.Contains(criterio))
+                    .OrderByDescending(p => p.FechaCreacion)
+                    .ToList();
+            }
+        }
     }
 }

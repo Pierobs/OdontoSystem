@@ -1,7 +1,6 @@
 ﻿@model OdontoSystem.Entities.Cita
 @{
     ViewBag.Title = "Nueva Cita";
-    var pacientes = (IEnumerable<OdontoSystem.Entities.Paciente>)ViewBag.Pacientes;
     var odontologos = (IEnumerable<OdontoSystem.Entities.Usuario>)ViewBag.Odontologos;
 }
 
@@ -20,18 +19,16 @@
         @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
 
         <div class="row g-3">
-            <div class="col-md-6">
+            <div class="col-md-6 position-relative">
                 <label class="form-label">Paciente *</label>
-                <select name="IdPaciente" class="form-select" required>
-                    <option value="">-- Seleccione paciente --</option>
-                    @if (pacientes != null)
-                    {
-                        foreach (var p in pacientes)
-                        {
-                            <option value="@p.IdPaciente">@p.ApellidoPaterno @p.ApellidoMaterno, @p.Nombres</option>
-                        }
-                    }
-                </select>
+                <input type="text" id="inputBuscarPaciente" class="form-control" autocomplete="off"
+                       placeholder="Escribe nombre, apellido o documento (mínimo 3 caracteres)..."
+                       value="@ViewBag.PacienteSeleccionadoTexto" />
+                <input type="hidden" name="IdPaciente" id="hiddenIdPaciente"
+                       value="@(Model != null && Model.IdPaciente > 0 ? Model.IdPaciente.ToString() : "")" />
+                <div id="listaSugerenciasPaciente" class="list-group position-absolute w-100"
+                     style="z-index: 1000; display:none; max-height: 220px; overflow-y: auto;"></div>
+                <small id="feedbackPaciente" class="text-muted"></small>
             </div>
 
             <div class="col-md-6">
@@ -87,6 +84,84 @@
     const selectHora       = document.getElementById('selectHoraCita');
     const estadoSlots      = document.getElementById('estadoSlots');
     const feedback         = document.getElementById('feedbackCita');
+
+    // ─── B-05: Autocompletado de paciente ──────────────────────────────
+    const inputPaciente    = document.getElementById('inputBuscarPaciente');
+    const hiddenIdPaciente = document.getElementById('hiddenIdPaciente');
+    const listaSugerencias = document.getElementById('listaSugerenciasPaciente');
+    const feedbackPaciente = document.getElementById('feedbackPaciente');
+
+    let debouncePaciente = null;
+
+    function ocultarSugerencias() {
+        listaSugerencias.style.display = 'none';
+        listaSugerencias.innerHTML = '';
+    }
+
+    function seleccionarPaciente(id, texto) {
+        hiddenIdPaciente.value = id;
+        inputPaciente.value = texto;
+        feedbackPaciente.innerHTML = '<span class="text-success">✅ Paciente seleccionado</span>';
+        ocultarSugerencias();
+    }
+
+    inputPaciente.addEventListener('input', function () {
+        const criterio = this.value.trim();
+
+        // Si el usuario vuelve a escribir, la selección anterior ya no es válida
+        hiddenIdPaciente.value = '';
+        feedbackPaciente.innerHTML = '';
+
+        clearTimeout(debouncePaciente);
+
+        if (criterio.length < 3) {
+            ocultarSugerencias();
+            if (criterio.length > 0) {
+                feedbackPaciente.innerHTML = '<span class="text-muted">Escribe al menos 3 caracteres...</span>';
+            }
+            return;
+        }
+
+        feedbackPaciente.innerHTML = '<span class="text-secondary">⏳ Buscando...</span>';
+
+        debouncePaciente = setTimeout(function () {
+            fetch('@Url.Action("BuscarPorNombre", "Pacientes")?term=' + encodeURIComponent(criterio))
+                .then(res => res.json())
+                .then(pacientes => {
+                    if (!pacientes || pacientes.length === 0) {
+                        feedbackPaciente.innerHTML = '<span class="text-warning">No se encontraron pacientes activos con ese criterio</span>';
+                        ocultarSugerencias();
+                        return;
+                    }
+
+                    feedbackPaciente.innerHTML = '';
+                    listaSugerencias.innerHTML = pacientes.map(p =>
+                        '<button type="button" class="list-group-item list-group-item-action" ' +
+                        'data-id="' + p.id + '" data-texto="' + p.texto.replace(/"/g, '&quot;') + '">' +
+                        p.texto + '</button>'
+                    ).join('');
+                    listaSugerencias.style.display = 'block';
+                })
+                .catch(() => {
+                    feedbackPaciente.innerHTML = '<span class="text-danger">Error al buscar pacientes</span>';
+                    ocultarSugerencias();
+                });
+        }, 300); // debounce: espera a que el usuario deje de escribir
+    });
+
+    // Delegación de click sobre las sugerencias (se regeneran en cada búsqueda)
+    listaSugerencias.addEventListener('click', function (e) {
+        const item = e.target.closest('[data-id]');
+        if (!item) return;
+        seleccionarPaciente(item.dataset.id, item.dataset.texto);
+    });
+
+    // Cerrar la lista al hacer click fuera
+    document.addEventListener('click', function (e) {
+        if (e.target !== inputPaciente && !listaSugerencias.contains(e.target)) {
+            ocultarSugerencias();
+        }
+    });
 
     let fechasDisponibles = []; // fechas con disponibilidad del odontólogo
 
@@ -199,6 +274,15 @@
 
     // ─── Validación antes de enviar ───────────────────────────────────
     document.querySelector('form').addEventListener('submit', function (e) {
+        // B-05: el input de texto no garantiza que haya un paciente real
+        // seleccionado (pudo escribir y no hacer click en ninguna sugerencia).
+        if (!hiddenIdPaciente.value) {
+            e.preventDefault();
+            feedbackPaciente.innerHTML = '<span class="text-danger">❌ Selecciona un paciente de la lista de sugerencias</span>';
+            inputPaciente.focus();
+            return;
+        }
+
         const fecha = inputFecha.value;
         const hora  = selectHora.value;
         if (!fecha || !hora) return;

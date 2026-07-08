@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Web.Mvc;
 using OdontoSystem.BLL.Services;
 using OdontoSystem.Entities;
@@ -137,6 +138,24 @@ namespace OdontoSystem.Web.Controllers
         {
             bool existe = _service.ExisteDocumento(numero);
             return Json(new { existe }, JsonRequestBehavior.AllowGet);
+        }
+
+        /// <summary>
+        /// B-05 — Autocompletado de paciente al agendar una cita. Se consulta desde
+        /// Citas/Crear.cshtml cuando el usuario escribe 3+ caracteres; solo trae
+        /// pacientes activos y un máximo de 10 resultados.
+        /// </summary>
+        [HttpGet]
+        public JsonResult BuscarPorNombre(string term)
+        {
+            var pacientes = _service.BuscarActivosPorNombre(term)
+                .Select(p => new
+                {
+                    id = p.IdPaciente,
+                    texto = $"{p.ApellidoPaterno} {p.ApellidoMaterno}, {p.Nombres} — {p.NumeroDocumento}"
+                });
+
+            return Json(pacientes, JsonRequestBehavior.AllowGet);
         }
 
         [HttpGet]

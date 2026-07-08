@@ -43,6 +43,7 @@ namespace OdontoSystem.BLL.Services
             {
                 return ctx.Odontogramas
                     .Include(o => o.Paciente)
+                    .Include(o => o.Paciente.TipoDocumento) // HU-14: necesario en la vista PDF (contexto ya disposed al renderizar)
                     .Include(o => o.Cita.Odontologo)
                     .Include(o => o.DientesEstado)
                     .FirstOrDefault(o => o.IdOdontograma == idOdontograma);

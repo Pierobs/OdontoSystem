@@ -19,6 +19,13 @@ namespace OdontoSystem.Web.Controllers
             var tratamientos = _service.Listar();
             return View(tratamientos);
         }
+
+        public ActionResult Buscar(string criterio)
+        {
+            ViewBag.Criterio = criterio;
+            return View("Index", _service.Buscar(criterio));
+        }
+
         [HttpGet]
         public ActionResult Crear()
         {

@@ -25,6 +25,19 @@
         </div>
     }
 
+    <form method="get" action="@Url.Action("Buscar")" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="criterio" class="form-control"
+                   value="@ViewBag.Criterio"
+                   placeholder="Buscar por nombre del tratamiento..." />
+            <button type="submit" class="btn btn-outline-primary">Buscar</button>
+            @if (!string.IsNullOrEmpty(ViewBag.Criterio as string))
+            {
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Limpiar</a>
+            }
+        </div>
+    </form>
+
     @if (Model != null && Model.Any())
     {
         <table class="table table-striped">
