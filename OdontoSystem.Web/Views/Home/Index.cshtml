@@ -2,17 +2,11 @@
     ViewBag.Title = "Inicio";
 }
 
-<div class="page-header">
-    <div class="container">
-        <h2 class="mb-0">
-            <i class="fa-solid fa-tooth text-primary"></i>
-            Bienvenido, @Session["NombreCompleto"]
-        </h2>
-        <p class="text-muted mb-0">Panel principal del Consultorio Odontológico Romero</p>
+<div class="container-fluid px-4 mt-4">
+    <div class="mb-1">
+        <h2 class="mb-0">Bienvenido, @Session["NombreCompleto"]</h2>
+        <p class="text-muted mb-0 small">Panel principal del Consultorio Odontológico Romero</p>
     </div>
-</div>
-
-<div class="container">
 
     @* Alerta de disponibilidad para odontólogos *@
     @if (ViewBag.AlertaDisponibilidad == true)
@@ -30,18 +24,16 @@
         </div>
     }
 
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-4 mt-1">
         <div class="col-md-6 col-lg-3">
-            <div class="card h-100" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
-                <div class="card-body text-white">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="opacity-75 mb-1">Pacientes activos</h6>
-                            <h2 class="fw-bold mb-0">@ViewBag.TotalPacientes</h2>
-                        </div>
-                        <i class="fa-solid fa-user-injured fa-2x opacity-50"></i>
+            <div class="card kpi-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="kpi-icon"><i class="fa-solid fa-user-injured"></i></span>
                     </div>
-                    <a href="@Url.Action("Index","Pacientes")" class="text-white text-decoration-none small mt-3 d-block">
+                    <div class="kpi-label mb-1">Pacientes activos</div>
+                    <h2 class="fw-bold mb-0">@ViewBag.TotalPacientes</h2>
+                    <a href="@Url.Action("Index","Pacientes")" class="text-decoration-none small mt-2 d-block">
                         Ver todos <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
@@ -49,16 +41,14 @@
         </div>
 
         <div class="col-md-6 col-lg-3">
-            <div class="card h-100" style="background: linear-gradient(135deg, #059669, #10b981);">
-                <div class="card-body text-white">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="opacity-75 mb-1">Citas hoy</h6>
-                            <h2 class="fw-bold mb-0">@ViewBag.CitasHoy</h2>
-                        </div>
-                        <i class="fa-solid fa-calendar-day fa-2x opacity-50"></i>
+            <div class="card kpi-card kpi-mint h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="kpi-icon"><i class="fa-solid fa-calendar-day"></i></span>
                     </div>
-                    <a href="@Url.Action("Index","Citas")" class="text-white text-decoration-none small mt-3 d-block">
+                    <div class="kpi-label mb-1">Citas hoy</div>
+                    <h2 class="fw-bold mb-0">@ViewBag.CitasHoy</h2>
+                    <a href="@Url.Action("Index","Citas")" class="text-decoration-none small mt-2 d-block">
                         Ver agenda <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
@@ -66,16 +56,14 @@
         </div>
 
         <div class="col-md-6 col-lg-3">
-            <div class="card h-100" style="background: linear-gradient(135deg, #d97706, #f59e0b);">
-                <div class="card-body text-white">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="opacity-75 mb-1">Citas pendientes</h6>
-                            <h2 class="fw-bold mb-0">@ViewBag.CitasPendientes</h2>
-                        </div>
-                        <i class="fa-solid fa-clock fa-2x opacity-50"></i>
+            <div class="card kpi-card kpi-amber h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="kpi-icon"><i class="fa-solid fa-clock"></i></span>
                     </div>
-                    <a href="@Url.Action("Index","Citas")" class="text-white text-decoration-none small mt-3 d-block">
+                    <div class="kpi-label mb-1">Citas pendientes</div>
+                    <h2 class="fw-bold mb-0">@ViewBag.CitasPendientes</h2>
+                    <a href="@Url.Action("Index","Citas")" class="text-decoration-none small mt-2 d-block">
                         Ver pendientes <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
@@ -83,16 +71,14 @@
         </div>
 
         <div class="col-md-6 col-lg-3">
-            <div class="card h-100" style="background: linear-gradient(135deg, #7c3aed, #a78bfa);">
-                <div class="card-body text-white">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="opacity-75 mb-1">Tratamientos</h6>
-                            <h2 class="fw-bold mb-0">@ViewBag.Tratamientos</h2>
-                        </div>
-                        <i class="fa-solid fa-list-check fa-2x opacity-50"></i>
+            <div class="card kpi-card kpi-coral h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="kpi-icon"><i class="fa-solid fa-list-check"></i></span>
                     </div>
-                    <a href="@Url.Action("Index","Catalogo")" class="text-white text-decoration-none small mt-3 d-block">
+                    <div class="kpi-label mb-1">Tratamientos</div>
+                    <h2 class="fw-bold mb-0">@ViewBag.Tratamientos</h2>
+                    <a href="@Url.Action("Index","Catalogo")" class="text-decoration-none small mt-2 d-block">
                         Ver catálogo <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>

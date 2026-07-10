@@ -3,209 +3,224 @@
     ViewBag.Title = "Citas";
 }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Citas Agendadas</h2>
-        <a href="@Url.Action("Crear")" class="btn btn-primary">+ Nueva Cita</a>
+<div class="container-fluid px-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <div>
+            <h2 class="mb-0">Citas</h2>
+            <p class="text-muted mb-0 small">Agenda y estado de las citas del consultorio.</p>
+        </div>
+        <a href="@Url.Action("Crear")" class="btn btn-primary"><i class="fa-solid fa-plus me-1"></i>Nueva Cita</a>
     </div>
 
     @if (TempData["Exito"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show">
+        <div class="alert alert-success alert-dismissible fade show mt-3">
             @TempData["Exito"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show">
+        <div class="alert alert-danger alert-dismissible fade show mt-3">
             @TempData["Error"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
     @if (TempData["Advertencia"] != null)
     {
-        <div class="alert alert-warning alert-dismissible fade show">
+        <div class="alert alert-warning alert-dismissible fade show mt-3">
             <i class="fa-solid fa-triangle-exclamation"></i> @TempData["Advertencia"]
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }
 
-    <form method="get" action="@Url.Action("Buscar")" class="mb-3">
-        <div class="input-group">
-            <input type="text" name="criterio" class="form-control"
-                   value="@ViewBag.Criterio"
-                   placeholder="Buscar por paciente, documento u odontólogo..." />
-            <button type="submit" class="btn btn-outline-primary">Buscar</button>
-            @if (!string.IsNullOrEmpty(ViewBag.Criterio as string))
+    <div class="card mt-3">
+        <div class="card-body">
+            <form method="get" action="@Url.Action("Buscar")" class="mb-3">
+                <div class="input-group" style="max-width:420px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                    <input type="text" name="criterio" class="form-control border-start-0 ps-0"
+                           value="@ViewBag.Criterio"
+                           placeholder="Buscar por paciente, documento u odontólogo..." />
+                    <button type="submit" class="btn btn-outline-primary">Buscar</button>
+                    @if (!string.IsNullOrEmpty(ViewBag.Criterio as string))
+                    {
+                        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Limpiar</a>
+                    }
+                </div>
+            </form>
+
+            @if (Model != null && Model.Any())
             {
-                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">Limpiar</a>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Paciente</th>
+                                <th>Odontólogo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model)
+                            {
+                                <tr>
+                                    <td class="num text-muted">@c.IdCita</td>
+                                    <td>@c.FechaCita.ToString("dd/MM/yyyy")</td>
+                                    <td class="num">@c.HoraCita.ToString(@"hh\:mm")</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="avatar-circle">@c.Paciente.Nombres.Substring(0, 1)@c.Paciente.ApellidoPaterno.Substring(0, 1)</span>
+                                            <span>@c.Paciente.ApellidoPaterno @c.Paciente.ApellidoMaterno, @c.Paciente.Nombres</span>
+                                        </div>
+                                    </td>
+                                    <td>Dr. @c.Odontologo.ApellidoPaterno @c.Odontologo.Nombres</td>
+                                    <td>
+                                        @switch (c.Estado)
+                                        {
+                                            case "Pendiente":<span class="badge bg-warning text-dark">Pendiente</span> break;
+                                            case "Atendida": <span class="badge bg-success">Atendida</span> break;
+                                            case "Cancelada": <span class="badge bg-danger">Cancelada</span>break;
+                                        }
+                                    </td>
+                                    <td>
+                                        <a href="@Url.Action("Detalle", new { id = c.IdCita })"
+                                           class="btn btn-sm btn-outline-info" title="Ver detalle">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </a>
+                                        @if (c.Estado == "Pendiente" && (Session["Rol"].ToString() == "Odontologo" || Session["Rol"].ToString() == "Administrador"))
+                                        {
+                                            <a href="@Url.Action("Atender", "Odontograma", new { idCita = c.IdCita })"
+                                               class="btn btn-sm btn-outline-success" title="Atender / Abrir odontograma">
+                                                <i class="fa-solid fa-tooth"></i>
+                                            </a>
+                                        }
+                                        @if (c.Estado == "Pendiente")
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                                    data-bs-toggle="modal" data-bs-target="#modalReprog-@c.IdCita"
+                                                    title="Reprogramar">
+                                                <i class="fa-solid fa-calendar-days"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#modalCancel-@c.IdCita"
+                                                    title="Cancelar">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+
+                                            @* Modal Cancelar *@
+                                            <div class="modal fade" id="modalCancel-@c.IdCita" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    @using (Html.BeginForm("Cancelar", "Citas", FormMethod.Post))
+                                                    {
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@c.IdCita" />
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title">Cancelar Cita #@c.IdCita</h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>
+                                                                    <strong>Paciente:</strong> @c.Paciente.Nombres @c.Paciente.ApellidoPaterno<br />
+                                                                    <strong>Fecha:</strong> @c.FechaCita.ToString("dd/MM/yyyy") @c.HoraCita.ToString(@"hh\:mm")
+                                                                </p>
+                                                                <label class="form-label">Motivo de cancelación *</label>
+                                                                <textarea name="motivo" class="form-control" required maxlength="500" rows="3"
+                                                                          placeholder="Ej: Paciente solicitó cancelar por viaje"></textarea>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                                                                <button type="submit" class="btn btn-danger">Confirmar cancelación</button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+
+                                            @* Modal Reprogramar *@
+                                            <div class="modal fade" id="modalReprog-@c.IdCita" tabindex="-1">
+                                                <div class="modal-dialog">
+                                                    @using (Html.BeginForm("Reprogramar", "Citas", FormMethod.Post, new { @class = "form-reprogramar" }))
+                                                    {
+                                                        @Html.AntiForgeryToken()
+                                                        <input type="hidden" name="id" value="@c.IdCita" />
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-warning">
+                                                                <h5 class="modal-title">Reprogramar Cita #@c.IdCita</h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p class="text-muted">
+                                                                    <small>Cita actual: @c.FechaCita.ToString("dd/MM/yyyy") @c.HoraCita.ToString(@"hh\:mm") — Dr. @c.Odontologo.ApellidoPaterno</small>
+                                                                </p>
+                                                                <div class="row g-3">
+                                                                    <div class="col-12">
+                                                                        <label class="form-label">Odontólogo *</label>
+                                                                        <select name="nuevoIdOdontologo" class="form-select select-odontologo-reprog"
+                                                                                data-cita-id="@c.IdCita" required>
+                                                                            @foreach (var o in (IEnumerable<OdontoSystem.Entities.Usuario>)ViewBag.Odontologos)
+                                                                            {
+                                                                                <option value="@o.IdUsuario"
+                                                                                        @(o.IdUsuario == c.IdOdontologo ? "selected" : "")>
+                                                                                    Dr. @o.ApellidoPaterno @o.Nombres
+                                                                                </option>
+                                                                            }
+                                                                        </select>
+                                                                        <small class="estado-odontologo-reprog text-muted" data-cita-id="@c.IdCita"></small>
+                                                                    </div>
+                                                                    <div class="col-7">
+                                                                        <label class="form-label">Nueva Fecha *</label>
+                                                                        <input type="date" name="nuevaFecha"
+                                                                               class="form-control input-fecha-reprog" required
+                                                                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                                                               data-cita-id="@c.IdCita" />
+                                                                    </div>
+                                                                    <div class="col-5">
+                                                                        <label class="form-label">Nueva Hora *</label>
+                                                                        <select name="nuevaHora"
+                                                                                class="form-select select-hora-reprog"
+                                                                                required disabled
+                                                                                data-cita-id="@c.IdCita">
+                                                                            <option value="">-- Elija fecha --</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-12">
+                                                                        <small class="estado-slots-reprog text-muted" data-cita-id="@c.IdCita"></small>
+                                                                    </div>
+                                                                    <div class="col-12">
+                                                                        <label class="form-label">Motivo *</label>
+                                                                        <textarea name="motivo" class="form-control" required maxlength="500" rows="2"
+                                                                                  placeholder="Ej: El odontólogo solicitó cambio de horario"></textarea>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+                                                                <button type="submit" class="btn btn-warning">Confirmar reprogramación</button>
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info mb-0">No hay citas agendadas.</div>
             }
         </div>
-    </form>
-
-    @if (Model != null && Model.Any())
-    {
-        <table class="table table-striped">
-            <thead class="table-primary">
-                <tr>
-                    <th>#</th>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Paciente</th>
-                    <th>Odontólogo</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var c in Model)
-                {
-                    <tr>
-                        <td>@c.IdCita</td>
-                        <td>@c.FechaCita.ToString("dd/MM/yyyy")</td>
-                        <td>@c.HoraCita.ToString(@"hh\:mm")</td>
-                        <td>@c.Paciente.ApellidoPaterno @c.Paciente.ApellidoMaterno, @c.Paciente.Nombres</td>
-                        <td>Dr. @c.Odontologo.ApellidoPaterno @c.Odontologo.Nombres</td>
-                        <td>
-                            @switch (c.Estado)
-                            {
-                                case "Pendiente":<span class="badge bg-warning text-dark">Pendiente</span> break;
-                                case "Atendida": <span class="badge bg-success">Atendida</span> break;
-                                case "Cancelada": <span class="badge bg-danger">Cancelada</span>break;
-                            }
-                        </td>
-                        <td>
-                            <a href="@Url.Action("Detalle", new { id = c.IdCita })"
-                               class="btn btn-sm btn-outline-info" title="Ver detalle">
-                                <i class="fa-solid fa-eye"></i>
-                            </a>
-                            @if (c.Estado == "Pendiente" && (Session["Rol"].ToString() == "Odontologo" || Session["Rol"].ToString() == "Administrador"))
-                            {
-                                <a href="@Url.Action("Atender", "Odontograma", new { idCita = c.IdCita })"
-                                   class="btn btn-sm btn-outline-success" title="Atender / Abrir odontograma">
-                                    <i class="fa-solid fa-tooth"></i>
-                                </a>
-                            }
-                            @if (c.Estado == "Pendiente")
-                            {
-                                <button type="button" class="btn btn-sm btn-outline-warning"
-                                        data-bs-toggle="modal" data-bs-target="#modalReprog-@c.IdCita"
-                                        title="Reprogramar">
-                                    <i class="fa-solid fa-calendar-days"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-danger"
-                                        data-bs-toggle="modal" data-bs-target="#modalCancel-@c.IdCita"
-                                        title="Cancelar">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-
-                                @* Modal Cancelar *@
-                                <div class="modal fade" id="modalCancel-@c.IdCita" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        @using (Html.BeginForm("Cancelar", "Citas", FormMethod.Post))
-                                        {
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@c.IdCita" />
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-danger text-white">
-                                                    <h5 class="modal-title">Cancelar Cita #@c.IdCita</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <p>
-                                                        <strong>Paciente:</strong> @c.Paciente.Nombres @c.Paciente.ApellidoPaterno<br />
-                                                        <strong>Fecha:</strong> @c.FechaCita.ToString("dd/MM/yyyy") @c.HoraCita.ToString(@"hh\:mm")
-                                                    </p>
-                                                    <label class="form-label">Motivo de cancelación *</label>
-                                                    <textarea name="motivo" class="form-control" required maxlength="500" rows="3"
-                                                              placeholder="Ej: Paciente solicitó cancelar por viaje"></textarea>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
-                                                    <button type="submit" class="btn btn-danger">Confirmar cancelación</button>
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-
-                                @* Modal Reprogramar *@
-                                <div class="modal fade" id="modalReprog-@c.IdCita" tabindex="-1">
-                                    <div class="modal-dialog">
-                                        @using (Html.BeginForm("Reprogramar", "Citas", FormMethod.Post, new { @class = "form-reprogramar" }))
-                                        {
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@c.IdCita" />
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-warning">
-                                                    <h5 class="modal-title">Reprogramar Cita #@c.IdCita</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <p class="text-muted">
-                                                        <small>Cita actual: @c.FechaCita.ToString("dd/MM/yyyy") @c.HoraCita.ToString(@"hh\:mm") — Dr. @c.Odontologo.ApellidoPaterno</small>
-                                                    </p>
-                                                    <div class="row g-3">
-                                                        <div class="col-12">
-                                                            <label class="form-label">Odontólogo *</label>
-                                                            <select name="nuevoIdOdontologo" class="form-select select-odontologo-reprog"
-                                                                    data-cita-id="@c.IdCita" required>
-                                                                @foreach (var o in (IEnumerable<OdontoSystem.Entities.Usuario>)ViewBag.Odontologos)
-                                                                {
-                                                                    <option value="@o.IdUsuario"
-                                                                            @(o.IdUsuario == c.IdOdontologo ? "selected" : "")>
-                                                                        Dr. @o.ApellidoPaterno @o.Nombres
-                                                                    </option>
-                                                                }
-                                                            </select>
-                                                            <small class="estado-odontologo-reprog text-muted" data-cita-id="@c.IdCita"></small>
-                                                        </div>
-                                                        <div class="col-7">
-                                                            <label class="form-label">Nueva Fecha *</label>
-                                                            <input type="date" name="nuevaFecha"
-                                                                   class="form-control input-fecha-reprog" required
-                                                                   min="@DateTime.Today.ToString("yyyy-MM-dd")"
-                                                                   data-cita-id="@c.IdCita" />
-                                                        </div>
-                                                        <div class="col-5">
-                                                            <label class="form-label">Nueva Hora *</label>
-                                                            <select name="nuevaHora"
-                                                                    class="form-select select-hora-reprog"
-                                                                    required disabled
-                                                                    data-cita-id="@c.IdCita">
-                                                                <option value="">-- Elija fecha --</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <small class="estado-slots-reprog text-muted" data-cita-id="@c.IdCita"></small>
-                                                        </div>
-                                                        <div class="col-12">
-                                                            <label class="form-label">Motivo *</label>
-                                                            <textarea name="motivo" class="form-control" required maxlength="500" rows="2"
-                                                                      placeholder="Ej: El odontólogo solicitó cambio de horario"></textarea>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
-                                                    <button type="submit" class="btn btn-warning">Confirmar reprogramación</button>
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <div class="alert alert-info">No hay citas agendadas.</div>
-    }
+    </div>
 </div>
 
 @section Scripts {
